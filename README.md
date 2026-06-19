@@ -7,8 +7,9 @@ Geen build-stap, geen frameworks — gewoon HTML, CSS en een beetje JavaScript.
 
 ```
 index.html    # alle secties (hero, over ons, diensten, afspraak, tijden, contact, footer)
-styles.css    # design system (donker + crème + goud) en scroll-reveal stijlen
-script.js     # sticky nav, mobiel menu, scroll-animaties, Calendly placeholder
+styles.css    # design system (crème + ink + barber-rood, serif koppen) en scroll-reveal
+script.js     # sticky nav (verbergt bij scrollen), mobiel menu, scroll-animaties, afspraak-preview
+images/       # logo-icoon (razor), dienst-iconen (beard/cut-beard/child) en foto's
 ```
 
 ## Bekijken
@@ -34,19 +35,13 @@ een trapsgewijze vertraging voor een mooi stagger-effect.
 
 Respecteert `prefers-reduced-motion` voor gebruikers die minder beweging willen.
 
-## Calendly later koppelen
+## Eigen afsprakensysteem
 
-De afspraaksectie (`#afspraak`) bevat nu een **placeholder**. Vervang in
-`index.html` het blok `<div class="calendly"> … </div>` door de officiële embed:
-
-```html
-<div class="calendly-inline-widget"
-     data-url="https://calendly.com/JOUW-LINK"
-     style="min-width:320px;height:640px;"></div>
-<script src="https://assets.calendly.com/assets/external/widget.js" async></script>
-```
-
-De demo-knop in `script.js` (`#calendlyDemo`) kan daarna weg.
+Calendly is verwijderd. De afspraaksectie (`#afspraak`) bevat nu een **eigen
+boekings-UI** (dienst → dag → tijd) als preview. De achterkant (vaste tijdslots,
+live beschikbaarheid, dubbele boekingen voorkomen, bevestigingsmail en een
+beheerscherm) wordt aangesloten via Vercel Functions + database. De definitieve
+look van dit blok volgt op basis van een aangeleverde screenshot.
 
 ## Inhoud aanpassen
 

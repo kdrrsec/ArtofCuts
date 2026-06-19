@@ -11,13 +11,11 @@
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://artofcuts.nl/" />
 
-  <!-- Lokale / geo SEO -->
   <meta name="geo.region" content="NL-GE" />
   <meta name="geo.placename" content="Arnhem" />
   <meta name="geo.position" content="51.9836;5.9116" />
   <meta name="ICBM" content="51.9836, 5.9116" />
 
-  <!-- Open Graph / social -->
   <meta property="og:type" content="business.business" />
   <meta property="og:locale" content="nl_NL" />
   <meta property="og:site_name" content="Art of Cuts" />
@@ -30,16 +28,15 @@
   <meta name="twitter:description" content="Dé barbershop in Arnhem voor knippen, baard en fade. Maak eenvoudig een afspraak." />
   <meta name="twitter:image" content="https://artofcuts.nl/images/art-of-cuts-mural.png" />
 
-  <meta name="theme-color" content="#100f0d" />
+  <meta name="theme-color" content="#14110c" />
   <link rel="icon" type="image/png" href="images/razor.png" />
   <link rel="apple-touch-icon" href="images/razor.png" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 
-  <!-- Gestructureerde data voor Google (lokale vindbaarheid) -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -59,11 +56,7 @@
       "addressRegion": "Gelderland",
       "addressCountry": "NL"
     },
-    "geo": {
-      "@type": "GeoCoordinates",
-      "latitude": 51.9836,
-      "longitude": 5.9116
-    },
+    "geo": { "@type": "GeoCoordinates", "latitude": 51.9836, "longitude": 5.9116 },
     "areaServed": "Arnhem en omgeving",
     "openingHoursSpecification": [
       { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Tuesday", "Wednesday", "Friday"], "opens": "10:00", "closes": "18:00" },
@@ -92,12 +85,13 @@
       <nav class="nav__links" id="navLinks">
         <a href="#over">Over ons</a>
         <a href="#diensten">Diensten</a>
+        <a href="#afspraak">Afspraak</a>
         <a href="#tijden">Openingstijden</a>
         <a href="#contact">Contact</a>
       </nav>
 
       <div class="nav__right">
-        <a href="#afspraak" class="btn btn--gold">Maak afspraak</a>
+        <a href="#afspraak" class="btn btn--red">Maak afspraak</a>
         <button class="nav__toggle" id="navToggle" aria-label="Menu">
           <span></span><span></span><span></span>
         </button>
@@ -107,29 +101,28 @@
 
   <!-- HERO -->
   <section class="hero" id="home">
-    <div class="hero__media">
-      <img src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=1600&q=80" alt="Barber aan het werk bij Art of Cuts" />
-      <div class="hero__overlay"></div>
-    </div>
+    <div class="hero__inner">
+      <div class="hero__text">
+        <p class="kicker" data-reveal><span></span> Barbershop · Arnhem</p>
+        <h1 class="hero__title" data-reveal data-delay="1">
+          Waar we knippen tot een <em>kunst</em> hebben verheven
+        </h1>
+        <p class="hero__lead" data-reveal data-delay="2">
+          Jouw barbershop in Arnhem en omgeving. Vakmanschap, rust en aandacht —
+          zodat je met een glimlach de deur uit loopt.
+        </p>
+        <div class="hero__actions" data-reveal data-delay="3">
+          <a href="#afspraak" class="btn btn--red">Maak afspraak</a>
+          <a href="tel:0614450069" class="btn btn--line">06-14450069</a>
+        </div>
+        <p class="hero__addr" data-reveal data-delay="3">Walstraat 14, 6811 BC Arnhem</p>
+      </div>
 
-    <div class="hero__content">
-      <h1 class="hero__title">
-        <span data-reveal>Waar we knippen tot een</span>
-        <span data-reveal data-delay="1"><em>kunst</em> hebben verheven</span>
-      </h1>
-      <p class="hero__sub" data-reveal data-delay="2">
-        Walstraat 14, 6811 BC<br />Arnhem
-      </p>
-      <div class="hero__actions" data-reveal data-delay="3">
-        <a href="#afspraak" class="btn btn--gold">Maak afspraak</a>
-        <a href="#diensten" class="btn btn--ghost">Bekijk diensten</a>
+      <div class="hero__media" data-reveal data-delay="2">
+        <img src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=1100&q=80" alt="Barber aan het werk bij Art of Cuts in Arnhem" />
+        <div class="hero__tag"><span class="logo__icon" style="--icon: url('images/razor.png')" aria-hidden="true"></span> Est. Arnhem</div>
       </div>
     </div>
-
-    <a href="#over" class="hero__scroll" aria-label="Scroll naar beneden">
-      <span></span>
-      Scroll
-    </a>
   </section>
 
   <!-- MARQUEE -->
@@ -147,35 +140,32 @@
   </div>
 
   <!-- OVER ONS -->
-  <section class="about" id="over">
-    <div class="about__grid">
-      <div class="about__media" data-reveal>
+  <section class="over" id="over">
+    <div class="over__inner">
+      <div class="over__media" data-reveal>
         <img src="images/art-of-cuts-mural.png" alt="Muurschildering en gereedschap bij Art of Cuts" />
       </div>
-
-      <div class="about__text">
-        <h2 class="section-title" data-reveal>Over ons</h2>
+      <div class="over__text">
+        <p class="label" data-reveal>Over ons</p>
+        <h2 class="h-serif" data-reveal data-delay="1">Begonnen als hobby, gegroeid tot passie</h2>
         <p data-reveal data-delay="1">
-          Zoals bij vele kunstenaars is het allemaal begonnen als een hobby. Maar
-          de passie was te groot om er niet meer van te maken. Wij zien ons vak als
-          barber dan ook als kunst en dit gecombineerd met knippen maakt
-          <strong>“Art of Cuts”</strong>.
+          Zoals bij vele kunstenaars is het allemaal begonnen als een hobby. Maar de
+          passie was te groot om er niet meer van te maken. Wij zien ons vak als barber
+          dan ook als kunst en dit gecombineerd met knippen maakt <strong>“Art of Cuts”</strong>.
         </p>
         <p data-reveal data-delay="2">
-          Art of Cuts is de barbershop in Arnhem waar iedereen op zijn gemak is,
-          iedereen zich welkom voelt en zichzelf kan zijn. Dit komt omdat de klant
-          bij ons centraal staat. Wij denken mee met de klant, geven advies en nemen
-          de tijd. We zorgen ervoor dat al onze klanten met een glimlach de deur uit
-          gaan. En dat is nou precies waar onze drive en positieve energie vandaan
-          komt.
+          Art of Cuts is de barbershop in Arnhem waar iedereen op zijn gemak is, iedereen
+          zich welkom voelt en zichzelf kan zijn. Dit komt omdat de klant bij ons centraal
+          staat. Wij denken mee met de klant, geven advies en nemen de tijd. We zorgen ervoor
+          dat al onze klanten met een glimlach de deur uit gaan. En dat is nou precies waar
+          onze drive en positieve energie vandaan komt.
         </p>
         <p data-reveal data-delay="3">
-          Ook gooien we de handdoek niet in de ring als het even tegen zit. Door
-          gebruik te maken van het moment hebben we de zaak vernieuwd. We stralen
-          echt iets unieks uit en zo onderscheiden wij ons als barbershop van
-          anderen. Tot slot zijn we de gezelligste en wie houdt er nou niet van
-          gezelligheid? Kom gerust langs in onze barbershop in Arnhem en proef de
-          sfeer!
+          Ook gooien we de handdoek niet in de ring als het even tegen zit. Door gebruik te
+          maken van het moment hebben we de zaak vernieuwd. We stralen echt iets unieks uit en
+          zo onderscheiden wij ons als barbershop van anderen. Tot slot zijn we de gezelligste
+          en wie houdt er nou niet van gezelligheid? Kom gerust langs in onze barbershop in
+          Arnhem en proef de sfeer!
         </p>
       </div>
     </div>
@@ -184,13 +174,13 @@
   <!-- DIENSTEN -->
   <section class="services" id="diensten">
     <div class="services__head">
-      <p class="section-label" data-reveal>Diensten</p>
-      <h2 class="section-title" data-reveal data-delay="1">Wat we aanbieden</h2>
+      <p class="label" data-reveal>Diensten</p>
+      <h2 class="h-serif" data-reveal data-delay="1">Wat we aanbieden</h2>
     </div>
 
-    <div class="services__list">
-      <article class="service" data-reveal>
-        <div class="service__icon">
+    <div class="services__grid">
+      <article class="card" data-reveal>
+        <div class="card__icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="6" cy="6" r="3" />
             <circle cx="6" cy="18" r="3" />
@@ -199,97 +189,114 @@
             <line x1="8.12" y1="8.12" x2="12" y2="12" />
           </svg>
         </div>
-        <div class="service__body">
-          <h3>Knippen</h3>
-          <p>Een knipbeurt op maat, helemaal afgestemd op jouw stijl.</p>
-        </div>
-        <div class="service__price">vanaf €27,50</div>
+        <h3>Knippen</h3>
+        <p>Een knipbeurt op maat, helemaal afgestemd op jouw stijl.</p>
+        <span class="card__price">vanaf €27,50</span>
       </article>
 
-      <article class="service" data-reveal data-delay="1">
-        <div class="service__icon">
-          <span class="service__mask" style="--icon: url('images/beard.png')" role="img" aria-label="Baard"></span>
+      <article class="card" data-reveal data-delay="1">
+        <div class="card__icon">
+          <span class="mask" style="--icon: url('images/beard.png')" aria-hidden="true"></span>
         </div>
-        <div class="service__body">
-          <h3>Baard</h3>
-          <p>Strak getrimd en verzorgd, perfect in lijn met je gezicht.</p>
-        </div>
-        <div class="service__price">vanaf €17,50</div>
+        <h3>Baard</h3>
+        <p>Strak getrimd en verzorgd, perfect in lijn met je gezicht.</p>
+        <span class="card__price">vanaf €17,50</span>
       </article>
 
-      <article class="service" data-reveal data-delay="2">
-        <div class="service__icon">
-          <span class="service__mask" style="--icon: url('images/cut-beard.png')" role="img" aria-label="Knippen en baard"></span>
+      <article class="card" data-reveal data-delay="2">
+        <div class="card__icon">
+          <span class="mask" style="--icon: url('images/cut-beard.png')" aria-hidden="true"></span>
         </div>
-        <div class="service__body">
-          <h3>Knippen + Baard</h3>
-          <p>De complete behandeling. Fris de deur uit van top tot kin.</p>
-        </div>
-        <div class="service__price">vanaf €42,50</div>
+        <h3>Knippen + Baard</h3>
+        <p>De complete behandeling. Fris de deur uit van top tot kin.</p>
+        <span class="card__price">vanaf €42,50</span>
       </article>
 
-      <article class="service" data-reveal data-delay="3">
-        <div class="service__icon">
-          <span class="service__mask" style="--icon: url('images/child.png')" role="img" aria-label="Kind"></span>
+      <article class="card" data-reveal data-delay="3">
+        <div class="card__icon">
+          <span class="mask" style="--icon: url('images/child.png')" aria-hidden="true"></span>
         </div>
-        <div class="service__body">
-          <h3>Knippen kind <small>(t/m 10 jaar)</small></h3>
-          <p>Geduldig en op het gemak — ook de kleintjes gaan blij naar huis.</p>
-        </div>
-        <div class="service__price">vanaf €20,00</div>
+        <h3>Knippen kind <small>(t/m 10 jaar)</small></h3>
+        <p>Geduldig en op het gemak — ook de kleintjes gaan blij naar huis.</p>
+        <span class="card__price">vanaf €20,00</span>
       </article>
     </div>
   </section>
 
-  <!-- AFSPRAAK / CALENDLY -->
+  <!-- AFSPRAAK -->
   <section class="booking" id="afspraak">
     <div class="booking__inner">
-      <div class="booking__text">
-        <p class="section-label" data-reveal>Afspraak</p>
-        <h2 class="section-title" data-reveal data-delay="1">Plan je bezoek</h2>
+      <div class="booking__intro">
+        <p class="label label--light" data-reveal>Afspraak</p>
+        <h2 class="h-serif" data-reveal data-delay="1">Plan je bezoek</h2>
         <p data-reveal data-delay="2">
-          Kies een moment dat jou uitkomt. Hieronder verschijnt straks onze
-          online agenda — plannen in een paar tikken, zonder gedoe.
+          Kies een dienst, een dag en een tijd die jou uitkomt. Je krijgt een bevestiging
+          en wij zien je graag in de stoel.
         </p>
         <a href="tel:0614450069" class="booking__call" data-reveal data-delay="3">
-          Liever bellen? <strong>06-14450069</strong>
+          Liever telefonisch? <strong>06-14450069</strong>
         </a>
       </div>
 
-      <!-- Placeholder voor Calendly. Vervang dit blok later door de echte embed. -->
-      <div class="calendly" data-reveal data-delay="2">
-        <div class="calendly__placeholder">
-          <div class="calendly__icon">📅</div>
-          <h3>Online agenda</h3>
-          <p>Hier wordt de Calendly-planner geplaatst.</p>
-          <a href="#" class="btn btn--gold" id="calendlyDemo">Voorbeeld — boek hier</a>
-          <small>De koppeling met Calendly volgt later.</small>
+      <!-- Eigen afsprakensysteem (preview). Wordt aangesloten op de backend. -->
+      <div class="booker" data-reveal data-delay="2">
+        <div class="booker__step">
+          <span class="booker__num">1</span>
+          <p class="booker__label">Kies je dienst</p>
+          <div class="booker__options">
+            <button type="button" class="chip is-active">Knippen · €27,50</button>
+            <button type="button" class="chip">Baard · €17,50</button>
+            <button type="button" class="chip">Knippen + Baard · €42,50</button>
+            <button type="button" class="chip">Kind · €20,00</button>
+          </div>
         </div>
+
+        <div class="booker__step">
+          <span class="booker__num">2</span>
+          <p class="booker__label">Kies een dag</p>
+          <div class="booker__days" id="bookerDays"></div>
+        </div>
+
+        <div class="booker__step">
+          <span class="booker__num">3</span>
+          <p class="booker__label">Kies een tijd</p>
+          <div class="booker__times">
+            <button type="button" class="slot">10:00</button>
+            <button type="button" class="slot">10:45</button>
+            <button type="button" class="slot is-taken" disabled>11:30</button>
+            <button type="button" class="slot">13:00</button>
+            <button type="button" class="slot">14:30</button>
+            <button type="button" class="slot">15:15</button>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn--red booker__submit" id="bookerSubmit">Bevestig afspraak</button>
+        <p class="booker__note">Voorbeeldweergave — het boekingssysteem wordt nog aangesloten.</p>
       </div>
     </div>
   </section>
 
   <!-- OPENINGSTIJDEN + CONTACT -->
   <section class="info" id="tijden">
-    <div class="info__grid">
+    <div class="info__inner">
       <div class="info__hours">
-        <p class="section-label" data-reveal>Openingstijden</p>
-        <h2 class="section-title" data-reveal data-delay="1">Wanneer we open zijn</h2>
+        <p class="label" data-reveal>Openingstijden</p>
+        <h2 class="h-serif" data-reveal data-delay="1">Wanneer we open zijn</h2>
         <ul class="hours">
           <li data-reveal><span>Maandag</span><b class="closed">Gesloten</b></li>
-          <li data-reveal data-delay="1"><span>Dinsdag</span><b>10:00 – 18:00</b></li>
+          <li data-reveal><span>Dinsdag</span><b>10:00 – 18:00</b></li>
           <li data-reveal data-delay="1"><span>Woensdag</span><b>10:00 – 18:00</b></li>
-          <li data-reveal data-delay="2"><span>Donderdag</span><b>10:00 – 20:00</b></li>
+          <li data-reveal data-delay="1"><span>Donderdag</span><b>10:00 – 20:00</b></li>
           <li data-reveal data-delay="2"><span>Vrijdag</span><b>10:00 – 18:00</b></li>
-          <li data-reveal data-delay="3"><span>Zaterdag</span><b>09:00 – 16:30</b></li>
+          <li data-reveal data-delay="2"><span>Zaterdag</span><b>09:00 – 16:30</b></li>
           <li data-reveal data-delay="3"><span>Zondag</span><b class="closed">Gesloten</b></li>
         </ul>
       </div>
 
       <div class="info__contact" id="contact">
-        <p class="section-label" data-reveal>Contact</p>
-        <h2 class="section-title" data-reveal data-delay="1">Kom langs</h2>
-        <div class="contact__card" data-reveal data-delay="2">
+        <p class="label" data-reveal>Contact</p>
+        <h2 class="h-serif" data-reveal data-delay="1">Kom langs</h2>
+        <div class="contact__rows" data-reveal data-delay="2">
           <p class="contact__row">
             <span>Adres</span>
             <a href="https://maps.google.com/?q=Walstraat+14+6811+BC+Arnhem" target="_blank" rel="noopener">Walstraat 14, 6811 BC Arnhem</a>
@@ -310,14 +317,6 @@
     </div>
   </section>
 
-  <!-- CTA STRIP -->
-  <section class="cta">
-    <div class="cta__inner" data-reveal>
-      <h2>Klaar voor een frisse start?</h2>
-      <a href="#afspraak" class="btn btn--gold">Maak afspraak</a>
-    </div>
-  </section>
-
   <!-- FOOTER -->
   <footer class="footer">
     <div class="footer__inner">
@@ -332,8 +331,8 @@
         <h4>Navigatie</h4>
         <a href="#over">Over ons</a>
         <a href="#diensten">Diensten</a>
-        <a href="#tijden">Openingstijden</a>
         <a href="#afspraak">Afspraak</a>
+        <a href="#tijden">Openingstijden</a>
       </div>
       <div class="footer__col">
         <h4>Contact</h4>
@@ -343,7 +342,7 @@
     </div>
     <div class="footer__bottom">
       <span>© <span id="year"></span> Art of Cuts — Arnhem</span>
-      <span>Alle rechten voorbehouden</span>
+      <span>Jouw barbershop in Arnhem en omgeving</span>
     </div>
   </footer>
 
