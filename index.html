@@ -236,7 +236,7 @@
     </div>
 
     <div class="team__grid">
-      <a href="#afspraak" class="barber" data-reveal>
+      <a href="#afspraak" class="barber" data-reveal data-barber="barbier-1">
         <div class="barber__media">
           <img src="https://images.unsplash.com/photo-1503443207922-dff7d543fd0e?auto=format&fit=crop&w=900&q=80" alt="Barbier aan het werk bij Art of Cuts" />
         </div>
@@ -246,7 +246,7 @@
         </div>
       </a>
 
-      <a href="#afspraak" class="barber" data-reveal data-delay="1">
+      <a href="#afspraak" class="barber" data-reveal data-delay="1" data-barber="barbier-2">
         <div class="barber__media">
           <img src="https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=900&q=80" alt="Barbier aan het werk bij Art of Cuts" />
         </div>
@@ -265,8 +265,8 @@
         <p class="label label--light" data-reveal>Afspraak</p>
         <h2 class="h-serif" data-reveal data-delay="1">Plan je bezoek</h2>
         <p data-reveal data-delay="2">
-          Kies een dienst, een dag en een tijd die jou uitkomt. Je krijgt een bevestiging
-          en wij zien je graag in de stoel.
+          Kies een dienst, je kapper, een dag en een tijd die jou uitkomt. Je krijgt een
+          bevestiging en wij zien je graag in de stoel.
         </p>
         <a href="tel:0614450069" class="booking__call" data-reveal data-delay="3">
           Liever telefonisch? <strong>06-14450069</strong>
@@ -288,12 +288,31 @@
 
         <div class="booker__step">
           <span class="booker__num">2</span>
+          <p class="booker__label">Kies je kapper</p>
+          <div class="booker__barbers" id="bookerBarbers">
+            <button type="button" class="barber-pick is-active" data-barber="barbier-1">
+              <span class="barber-pick__photo">
+                <img src="https://images.unsplash.com/photo-1503443207922-dff7d543fd0e?auto=format&fit=crop&w=300&q=80" alt="Barbier 1" />
+              </span>
+              <span class="barber-pick__name">Barbier 1</span>
+            </button>
+            <button type="button" class="barber-pick" data-barber="barbier-2">
+              <span class="barber-pick__photo">
+                <img src="https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=300&q=80" alt="Barbier 2" />
+              </span>
+              <span class="barber-pick__name">Barbier 2</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="booker__step">
+          <span class="booker__num">3</span>
           <p class="booker__label">Kies een dag</p>
           <div class="booker__days" id="bookerDays"></div>
         </div>
 
         <div class="booker__step">
-          <span class="booker__num">3</span>
+          <span class="booker__num">4</span>
           <p class="booker__label">Kies een tijd</p>
           <div class="booker__times">
             <button type="button" class="slot">10:00</button>

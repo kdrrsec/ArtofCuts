@@ -86,8 +86,23 @@ if (daysWrap) {
 }
 
 singleSelect(document.querySelector(".booker__options"), ".chip");
+singleSelect(document.getElementById("bookerBarbers"), ".barber-pick");
 singleSelect(daysWrap, ".day");
 singleSelect(document.querySelector(".booker__times"), ".slot");
+
+// Pre-select barber when clicking a team card
+function selectBarber(id) {
+  const barbersWrap = document.getElementById("bookerBarbers");
+  if (!barbersWrap || !id) return;
+  const btn = barbersWrap.querySelector(`[data-barber="${id}"]`);
+  if (!btn) return;
+  barbersWrap.querySelectorAll(".barber-pick").forEach((b) => b.classList.remove("is-active"));
+  btn.classList.add("is-active");
+}
+
+document.querySelectorAll(".team .barber[data-barber]").forEach((link) => {
+  link.addEventListener("click", () => selectBarber(link.dataset.barber));
+});
 
 const bookerSubmit = document.getElementById("bookerSubmit");
 if (bookerSubmit) {
