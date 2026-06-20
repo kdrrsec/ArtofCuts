@@ -70,6 +70,7 @@ const monthNames = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep
 const daysWrap = document.getElementById("bookerDays");
 const timesWrap = document.getElementById("bookerTimes");
 const bookerForm = document.getElementById("bookerForm");
+const bookerDetails = document.getElementById("bookerDetails");
 const bookerSubmit = document.getElementById("bookerSubmit");
 const bookerError = document.getElementById("bookerError");
 const bookerSuccess = document.getElementById("bookerSuccess");
@@ -169,6 +170,11 @@ function renderDayButton(dateStr, dayData, isActive, today) {
   return btn;
 }
 
+function updateDetailsStep() {
+  const ready = Boolean(getSelectedDate() && getSelectedTime());
+  if (bookerDetails) bookerDetails.hidden = !ready;
+}
+
 function renderTimeSlots(dateStr) {
   if (!timesWrap) return;
   timesWrap.innerHTML = "";
@@ -178,16 +184,19 @@ function renderTimeSlots(dateStr) {
 
   if (!slots.length) {
     timesWrap.innerHTML = '<p class="booker__empty">Geen tijden meer beschikbaar op deze dag.</p>';
+    updateDetailsStep();
     return;
   }
 
-  slots.forEach((time, index) => {
+  slots.forEach((time) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "slot" + (index === 0 ? " is-active" : "");
+    btn.className = "slot";
     btn.textContent = time;
     timesWrap.appendChild(btn);
   });
+
+  updateDetailsStep();
 }
 
 function renderBookingDays(preferredDate) {
@@ -223,6 +232,7 @@ async function fetchAvailability() {
   const barber = getSelectedBarber();
   if (!barber || !daysWrap) return;
 
+  if (bookerDetails) bookerDetails.hidden = true;
   bookableDates = getLocalBookableDates();
   const params = new URLSearchParams({
     barber,
@@ -258,8 +268,7 @@ function hideBookingError() {
 
 function showBookingSuccess(details, cancelUrl) {
   hideBookingError();
-  if (bookerForm) bookerForm.hidden = true;
-  if (bookerSubmit) bookerSubmit.hidden = true;
+  if (bookerDetails) bookerDetails.hidden = true;
   if (bookerSuccess) bookerSuccess.hidden = false;
   if (bookerSuccessText) {
     bookerSuccessText.textContent = `${details.firstName} ${details.lastName}, je staat gepland op ${details.dateLabel} om ${details.time} bij ${details.barberName} voor ${details.serviceName}.`;
@@ -333,7 +342,7 @@ if (daysWrap) {
   singleSelect(document.querySelector(".booker__options"), ".chip");
   singleSelect(document.getElementById("bookerBarbers"), ".barber-pick", fetchAvailability);
   singleSelect(daysWrap, ".day", (btn) => renderTimeSlots(btn.dataset.date));
-  singleSelect(timesWrap, ".slot");
+  singleSelect(timesWrap, ".slot", updateDetailsStep);
 
   fetchAvailability();
 }

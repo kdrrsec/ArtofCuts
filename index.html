@@ -317,7 +317,7 @@
           <div class="booker__times" id="bookerTimes"></div>
         </div>
 
-        <div class="booker__step">
+        <div class="booker__step booker__details" id="bookerDetails" hidden>
           <span class="booker__num">5</span>
           <p class="booker__label">Jouw gegevens</p>
           <form class="booker__form" id="bookerForm" novalidate>
@@ -340,9 +340,8 @@
               </label>
             </div>
           </form>
+          <button type="button" class="btn btn--red booker__submit" id="bookerSubmit">Bevestig afspraak</button>
         </div>
-
-        <button type="button" class="btn btn--red booker__submit" id="bookerSubmit">Bevestig afspraak</button>
         <p class="booker__error" id="bookerError" hidden></p>
         <div class="booker__success" id="bookerSuccess" hidden>
           <h3>Afspraak bevestigd</h3>
