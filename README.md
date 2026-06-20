@@ -37,11 +37,27 @@ Respecteert `prefers-reduced-motion` voor gebruikers die minder beweging willen.
 
 ## Eigen afsprakensysteem
 
-Calendly is verwijderd. De afspraaksectie (`#afspraak`) bevat nu een **eigen
-boekings-UI** (dienst → dag → tijd) als preview. De achterkant (vaste tijdslots,
-live beschikbaarheid, dubbele boekingen voorkomen, bevestigingsmail en een
-beheerscherm) wordt aangesloten via Vercel Functions + database. De definitieve
-look van dit blok volgt op basis van een aangeleverde screenshot.
+Het boekingssysteem draait op Vercel Functions + Neon Postgres.
+
+### Klant-flow
+1. Dienst, kapper, dag en tijd kiezen
+2. Voornaam + achternaam invullen (mail/telefoon optioneel)
+3. Bevestigen → tijdslot is bezet voor anderen
+4. Annuleren via persoonlijke link op `annuleren.html`
+
+### Kapper-portaal
+- Open `beheer.html`
+- Inloggen met `PORTAL_PASSWORD`
+- Agenda per dag en per kapper inzien
+
+### Setup op Vercel
+1. Voeg **Neon Postgres** toe via Vercel Storage
+2. Zet environment variables (zie `.env.example`):
+   - `DATABASE_URL`
+   - `PORTAL_PASSWORD`
+3. Deploy opnieuw
+
+De database-tabel wordt automatisch aangemaakt bij de eerste API-call.
 
 ## Inhoud aanpassen
 

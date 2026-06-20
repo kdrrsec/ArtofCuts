@@ -51,31 +51,36 @@ if ("IntersectionObserver" in window) {
 }
 
 /* -----------------------------------------------------------
-   Afspraak-preview (eigen boekingssysteem — wordt aangesloten)
+   Afsprakensysteem
    ----------------------------------------------------------- */
 
 const openingHours = {
-  0: null, // zondag
-  1: null, // maandag
-  2: { open: [10, 0], close: [18, 0] }, // dinsdag
-  3: { open: [10, 0], close: [18, 0] }, // woensdag
-  4: { open: [10, 0], close: [20, 0] }, // donderdag
-  5: { open: [10, 0], close: [18, 0] }, // vrijdag
-  6: { open: [9, 0], close: [16, 30] }, // zaterdag
+  0: null,
+  1: null,
+  2: { open: [10, 0], close: [18, 0] },
+  3: { open: [10, 0], close: [18, 0] },
+  4: { open: [10, 0], close: [20, 0] },
+  5: { open: [10, 0], close: [18, 0] },
+  6: { open: [9, 0], close: [16, 30] },
 };
 
-const SLOT_MINUTES = 45;
 const dayNames = ["zo", "ma", "di", "wo", "do", "vr", "za"];
 const monthNames = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
 
+const daysWrap = document.getElementById("bookerDays");
+const timesWrap = document.getElementById("bookerTimes");
+const bookerForm = document.getElementById("bookerForm");
+const bookerSubmit = document.getElementById("bookerSubmit");
+const bookerError = document.getElementById("bookerError");
+const bookerSuccess = document.getElementById("bookerSuccess");
+const bookerSuccessText = document.getElementById("bookerSuccessText");
+const bookerCancelLink = document.getElementById("bookerCancelLink");
+
+let availabilityByDate = new Map();
+let bookableDates = [];
+
 function toMinutes([hours, minutes]) {
   return hours * 60 + minutes;
-}
-
-function formatTime(totalMinutes) {
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
 function isSameDay(a, b) {
@@ -86,35 +91,52 @@ function isSameDay(a, b) {
   );
 }
 
-function getSlotsForDate(date) {
+function isDateLocallyOpen(date) {
   const hours = openingHours[date.getDay()];
-  if (!hours) return [];
-
-  const start = toMinutes(hours.open);
-  const end = toMinutes(hours.close);
+  if (!hours) return false;
   const now = new Date();
-  const isToday = isSameDay(date, now);
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const slots = [];
+  if (!isSameDay(date, now)) return true;
+  return toMinutes(hours.close) > now.getHours() * 60 + now.getMinutes();
+}
 
-  let time = start;
-  while (time + SLOT_MINUTES <= end) {
-    if (isToday && time <= nowMinutes) {
-      time += SLOT_MINUTES;
-      continue;
-    }
-    slots.push(formatTime(time));
-    time += SLOT_MINUTES;
+function formatDateString(date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function getLocalBookableDates(count = 8) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dates = [];
+
+  for (let offset = 0; dates.length < count && offset < 42; offset++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + offset);
+    if (isDateLocallyOpen(date)) dates.push(formatDateString(date));
   }
 
-  return slots;
+  return dates;
 }
 
-function isDateBookable(date) {
-  return getSlotsForDate(date).length > 0;
+function getSelectedBarber() {
+  return document.querySelector("#bookerBarbers .barber-pick.is-active")?.dataset.barber || null;
 }
 
-// Single-select helper for a group of buttons
+function getSelectedService() {
+  return document.querySelector(".booker__options .chip.is-active")?.dataset.service || null;
+}
+
+function getSelectedDate() {
+  return daysWrap?.querySelector(".day.is-active")?.dataset.date || null;
+}
+
+function getSelectedTime() {
+  return timesWrap?.querySelector(".slot.is-active")?.textContent || null;
+}
+
 function singleSelect(container, selector, onChange) {
   if (!container) return;
   container.addEventListener("click", (e) => {
@@ -126,14 +148,34 @@ function singleSelect(container, selector, onChange) {
   });
 }
 
-const daysWrap = document.getElementById("bookerDays");
-const timesWrap = document.getElementById("bookerTimes");
+function renderDayButton(dateStr, dayData, isActive, today) {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "day" + (isActive ? " is-active" : "") + (dayData && !dayData.slots.length ? " is-full" : "");
+  btn.dataset.date = dateStr;
+  if (dayData && !dayData.slots.length) btn.disabled = true;
 
-function renderTimeSlots(date) {
+  const showMonth = date.getMonth() !== today.getMonth() || date.getDate() === 1;
+  const fullness = dayData?.fullness || 0;
+
+  btn.innerHTML = `
+    <small>${showMonth ? `${dayNames[date.getDay()]} ${monthNames[date.getMonth()]}` : dayNames[date.getDay()]}</small>
+    <b>${date.getDate()}</b>
+    <span class="day__fill" aria-hidden="true"><span class="day__fill-bar" style="--fill: ${fullness}%"></span></span>
+  `;
+
+  return btn;
+}
+
+function renderTimeSlots(dateStr) {
   if (!timesWrap) return;
   timesWrap.innerHTML = "";
 
-  const slots = getSlotsForDate(date);
+  const dayData = availabilityByDate.get(dateStr);
+  const slots = dayData?.slots || [];
+
   if (!slots.length) {
     timesWrap.innerHTML = '<p class="booker__empty">Geen tijden meer beschikbaar op deze dag.</p>';
     return;
@@ -148,58 +190,154 @@ function renderTimeSlots(date) {
   });
 }
 
-function getSelectedDayDate() {
-  const active = daysWrap?.querySelector(".day.is-active");
-  if (!active?.dataset.date) return null;
-  const [year, month, day] = active.dataset.date.split("-").map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function buildBookingDays() {
+function renderBookingDays(preferredDate) {
   if (!daysWrap) return;
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  let added = 0;
+  daysWrap.innerHTML = "";
 
-  for (let offset = 0; added < 8 && offset < 42; offset++) {
-    const date = new Date(today);
-    date.setDate(today.getDate() + offset);
-    if (!isDateBookable(date)) continue;
-
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "day" + (added === 0 ? " is-active" : "");
-    btn.dataset.date = [
-      date.getFullYear(),
-      String(date.getMonth() + 1).padStart(2, "0"),
-      String(date.getDate()).padStart(2, "0"),
-    ].join("-");
-
-    const showMonth = date.getMonth() !== today.getMonth() || date.getDate() === 1;
-    btn.innerHTML = showMonth
-      ? `<small>${dayNames[date.getDay()]} ${monthNames[date.getMonth()]}</small><b>${date.getDate()}</b>`
-      : `<small>${dayNames[date.getDay()]}</small><b>${date.getDate()}</b>`;
-
-    daysWrap.appendChild(btn);
-    added++;
+  let activeDate = null;
+  if (preferredDate && availabilityByDate.get(preferredDate)?.slots?.length) {
+    activeDate = preferredDate;
+  } else {
+    activeDate = bookableDates.find((dateStr) => availabilityByDate.get(dateStr)?.slots?.length) || null;
   }
 
-  const firstDay = getSelectedDayDate();
-  if (firstDay) renderTimeSlots(firstDay);
+  bookableDates.forEach((dateStr) => {
+    const dayData = availabilityByDate.get(dateStr);
+    if (!dayData) return;
+
+    const btn = renderDayButton(dateStr, dayData, dateStr === activeDate, today);
+    daysWrap.appendChild(btn);
+  });
+
+  if (activeDate) {
+    renderTimeSlots(activeDate);
+  } else {
+    timesWrap.innerHTML = '<p class="booker__empty">Geen beschikbare dagen voor deze kapper.</p>';
+  }
 }
 
-buildBookingDays();
+async function fetchAvailability() {
+  const barber = getSelectedBarber();
+  if (!barber || !daysWrap) return;
 
-singleSelect(document.querySelector(".booker__options"), ".chip");
-singleSelect(document.getElementById("bookerBarbers"), ".barber-pick");
-singleSelect(daysWrap, ".day", () => {
-  const selectedDay = getSelectedDayDate();
-  if (selectedDay) renderTimeSlots(selectedDay);
-});
-singleSelect(timesWrap, ".slot");
+  bookableDates = getLocalBookableDates();
+  const params = new URLSearchParams({
+    barber,
+    dates: bookableDates.join(","),
+  });
 
-// Pre-select barber when clicking a team card
+  try {
+    const res = await fetch(`/api/availability?${params}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Kon beschikbaarheid niet laden");
+
+    availabilityByDate = new Map(data.days.map((day) => [day.date, day]));
+    renderBookingDays(getSelectedDate());
+  } catch (error) {
+    if (bookerError) {
+      bookerError.hidden = false;
+      bookerError.textContent = error.message;
+    }
+  }
+}
+
+function showBookingError(message) {
+  if (!bookerError) return;
+  bookerError.hidden = false;
+  bookerError.textContent = message;
+}
+
+function hideBookingError() {
+  if (!bookerError) return;
+  bookerError.hidden = true;
+  bookerError.textContent = "";
+}
+
+function showBookingSuccess(details, cancelUrl) {
+  hideBookingError();
+  if (bookerForm) bookerForm.hidden = true;
+  if (bookerSubmit) bookerSubmit.hidden = true;
+  if (bookerSuccess) bookerSuccess.hidden = false;
+  if (bookerSuccessText) {
+    bookerSuccessText.textContent = `${details.firstName} ${details.lastName}, je staat gepland op ${details.dateLabel} om ${details.time} bij ${details.barberName} voor ${details.serviceName}.`;
+  }
+  if (bookerCancelLink) bookerCancelLink.href = cancelUrl;
+}
+
+async function submitBooking() {
+  hideBookingError();
+
+  const barber = getSelectedBarber();
+  const service = getSelectedService();
+  const date = getSelectedDate();
+  const time = getSelectedTime();
+
+  if (!bookerForm?.reportValidity()) return;
+  if (!barber || !service || !date || !time) {
+    showBookingError("Kies een dienst, kapper, dag en tijd.");
+    return;
+  }
+
+  const formData = new FormData(bookerForm);
+  const payload = {
+    barber,
+    service,
+    date,
+    time,
+    firstName: formData.get("firstName"),
+    lastName: formData.get("lastName"),
+    email: formData.get("email") || null,
+    phone: formData.get("phone") || null,
+  };
+
+  if (bookerSubmit) {
+    bookerSubmit.disabled = true;
+    bookerSubmit.textContent = "Bezig met boeken…";
+  }
+
+  try {
+    const res = await fetch("/api/appointments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Boeken mislukt");
+
+    const [year, month, day] = date.split("-").map(Number);
+    const dateObj = new Date(year, month - 1, day);
+    const dateLabel = `${dayNames[dateObj.getDay()]} ${day} ${monthNames[dateObj.getMonth()]}`;
+
+    const barberName = document.querySelector(`#bookerBarbers [data-barber="${barber}"] .barber-pick__name`)?.textContent || barber;
+    const serviceName = document.querySelector(`.booker__options [data-service="${service}"]`)?.textContent?.split(" · ")[0] || service;
+
+    showBookingSuccess(
+      { ...payload, dateLabel, barberName, serviceName },
+      data.cancelUrl
+    );
+  } catch (error) {
+    showBookingError(error.message);
+    await fetchAvailability();
+  } finally {
+    if (bookerSubmit) {
+      bookerSubmit.disabled = false;
+      bookerSubmit.textContent = "Bevestig afspraak";
+    }
+  }
+}
+
+if (daysWrap) {
+  singleSelect(document.querySelector(".booker__options"), ".chip");
+  singleSelect(document.getElementById("bookerBarbers"), ".barber-pick", fetchAvailability);
+  singleSelect(daysWrap, ".day", (btn) => renderTimeSlots(btn.dataset.date));
+  singleSelect(timesWrap, ".slot");
+
+  fetchAvailability();
+}
+
 function selectBarber(id) {
   const barbersWrap = document.getElementById("bookerBarbers");
   if (!barbersWrap || !id) return;
@@ -207,18 +345,13 @@ function selectBarber(id) {
   if (!btn) return;
   barbersWrap.querySelectorAll(".barber-pick").forEach((b) => b.classList.remove("is-active"));
   btn.classList.add("is-active");
+  fetchAvailability();
 }
 
 document.querySelectorAll(".team .barber[data-barber]").forEach((link) => {
   link.addEventListener("click", () => selectBarber(link.dataset.barber));
 });
 
-const bookerSubmit = document.getElementById("bookerSubmit");
 if (bookerSubmit) {
-  bookerSubmit.addEventListener("click", () => {
-    alert(
-      "Bedankt! Het online afsprakensysteem wordt binnenkort geactiveerd.\n" +
-      "Bel ons gerust op 06-14450069 om alvast te boeken."
-    );
-  });
+  bookerSubmit.addEventListener("click", submitBooking);
 }

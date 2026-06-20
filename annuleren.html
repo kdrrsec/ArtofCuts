@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Afspraak annuleren — Art of Cuts</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@0,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { background: var(--cream); min-height: 100vh; }
+    .cancel-page { max-width: 620px; margin: 0 auto; padding: 4rem 1.5rem; }
+    .cancel-page h1 { font-family: var(--serif); font-size: clamp(2rem, 4vw, 2.8rem); margin: 0.5rem 0 1rem; }
+    .cancel-card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 1.5rem;
+    }
+    .cancel-card p { color: var(--muted); margin-bottom: 0.8rem; }
+    .cancel-card strong { color: var(--ink); }
+    .cancel-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.2rem; }
+    .cancel-error { color: var(--red); margin-top: 0.8rem; }
+    .cancel-success { color: #2f8b57; margin-top: 0.8rem; }
+  </style>
+</head>
+<body>
+  <main class="cancel-page">
+    <p class="label">Afspraak</p>
+    <h1>Annuleren</h1>
+
+    <div class="cancel-card" id="cancelCard">
+      <p id="cancelLoading">Afspraak laden…</p>
+      <div id="cancelDetails" hidden>
+        <p><strong id="cancelName"></strong></p>
+        <p id="cancelWhen"></p>
+        <p id="cancelService"></p>
+        <div class="cancel-actions" id="cancelActions">
+          <button type="button" class="btn btn--red" id="cancelBtn">Afspraak annuleren</button>
+          <a href="index.html#afspraak" class="btn btn--line">Nieuwe afspraak maken</a>
+        </div>
+      </div>
+      <p class="cancel-success" id="cancelSuccess" hidden>Je afspraak is geannuleerd. Het tijdslot staat weer open voor anderen.</p>
+      <p class="cancel-error" id="cancelError" hidden></p>
+    </div>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+
+    const cancelLoading = document.getElementById("cancelLoading");
+    const cancelDetails = document.getElementById("cancelDetails");
+    const cancelName = document.getElementById("cancelName");
+    const cancelWhen = document.getElementById("cancelWhen");
+    const cancelService = document.getElementById("cancelService");
+    const cancelActions = document.getElementById("cancelActions");
+    const cancelBtn = document.getElementById("cancelBtn");
+    const cancelSuccess = document.getElementById("cancelSuccess");
+    const cancelError = document.getElementById("cancelError");
+
+    const dayNames = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
+    const monthNames = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"];
+
+    function formatDateLabel(dateStr) {
+      const [year, month, day] = dateStr.split("-").map(Number);
+      const date = new Date(year, month - 1, day);
+      return `${dayNames[date.getDay()]} ${day} ${monthNames[date.getMonth()]} ${year}`;
+    }
+
+    async function loadAppointment() {
+      if (!token) {
+        cancelLoading.hidden = true;
+        cancelError.hidden = false;
+        cancelError.textContent = "Geen geldige annuleerlink.";
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/cancel?token=${encodeURIComponent(token)}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Afspraak niet gevonden");
+
+        cancelLoading.hidden = true;
+        const appointment = data.appointment;
+
+        if (appointment.cancelled) {
+          cancelSuccess.hidden = false;
+          cancelSuccess.textContent = "Deze afspraak is al geannuleerd.";
+          return;
+        }
+
+        cancelDetails.hidden = false;
+        cancelName.textContent = `${appointment.firstName} ${appointment.lastName}`;
+        cancelWhen.textContent = `${formatDateLabel(appointment.date)} om ${appointment.time}`;
+        cancelService.textContent = `${appointment.serviceName} bij ${appointment.barberName}`;
+      } catch (error) {
+        cancelLoading.hidden = true;
+        cancelError.hidden = false;
+        cancelError.textContent = error.message;
+      }
+    }
+
+    cancelBtn?.addEventListener("click", async () => {
+      cancelError.hidden = true;
+      cancelBtn.disabled = true;
+      cancelBtn.textContent = "Bezig…";
+
+      try {
+        const res = await fetch("/api/cancel-appointment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Annuleren mislukt");
+
+        cancelDetails.hidden = true;
+        cancelSuccess.hidden = false;
+      } catch (error) {
+        cancelError.hidden = false;
+        cancelError.textContent = error.message;
+        cancelBtn.disabled = false;
+        cancelBtn.textContent = "Afspraak annuleren";
+      }
+    });
+
+    loadAppointment();
+  </script>
+</body>
+</html>

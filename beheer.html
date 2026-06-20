@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Afspraken beheer — Art of Cuts</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@0,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { background: var(--ink); color: var(--cream); min-height: 100vh; }
+    .portal { max-width: 920px; margin: 0 auto; padding: 3rem 1.5rem 4rem; }
+    .portal__head { margin-bottom: 2rem; }
+    .portal__head h1 { font-family: var(--serif); font-size: clamp(2rem, 4vw, 2.8rem); margin: 0.4rem 0 0.6rem; }
+    .portal__head p { color: var(--muted-light); }
+    .portal__card {
+      background: var(--ink-soft);
+      border: 1px solid var(--line-light);
+      border-radius: 18px;
+      padding: 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .portal__login { display: grid; gap: 0.8rem; max-width: 360px; }
+    .portal__login input, .portal__toolbar input, .portal__toolbar select {
+      width: 100%;
+      border: 1px solid var(--line-light);
+      background: rgba(246, 241, 231, 0.05);
+      color: var(--cream);
+      border-radius: 12px;
+      padding: 0.75rem 0.9rem;
+      font: inherit;
+    }
+    .portal__toolbar {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 0.75rem;
+      align-items: end;
+      margin-bottom: 1rem;
+    }
+    .portal__toolbar label { display: grid; gap: 0.35rem; font-size: 0.8rem; color: var(--muted-light); }
+    .portal__list { display: grid; gap: 0.75rem; }
+    .portal__item {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 1rem;
+      padding: 1rem;
+      border-radius: 14px;
+      border: 1px solid var(--line-light);
+      background: rgba(246, 241, 231, 0.03);
+    }
+    .portal__time {
+      font-family: var(--serif);
+      font-size: 1.45rem;
+      color: var(--red);
+      line-height: 1;
+    }
+    .portal__item h3 { font-family: var(--serif); font-size: 1.2rem; margin-bottom: 0.2rem; }
+    .portal__meta { color: var(--muted-light); font-size: 0.86rem; }
+    .portal__empty, .portal__error { color: var(--muted-light); font-size: 0.92rem; }
+    .portal__error { color: #ff8f8f; }
+    .portal__back { color: var(--muted-light); font-size: 0.85rem; }
+    @media (max-width: 700px) {
+      .portal__toolbar { grid-template-columns: 1fr; }
+      .portal__item { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="portal">
+    <a href="index.html" class="portal__back">← Terug naar website</a>
+    <div class="portal__head">
+      <p class="label label--light">Kapper portaal</p>
+      <h1>Afspraken agenda</h1>
+      <p>Bekijk wie er vandaag en op andere dagen gepland staat.</p>
+    </div>
+
+    <section class="portal__card" id="loginCard">
+      <form class="portal__login" id="loginForm">
+        <label>
+          Wachtwoord
+          <input type="password" name="password" required autocomplete="current-password" />
+        </label>
+        <button type="submit" class="btn btn--red">Inloggen</button>
+        <p class="portal__error" id="loginError" hidden></p>
+      </form>
+    </section>
+
+    <section class="portal__card" id="agendaCard" hidden>
+      <div class="portal__toolbar">
+        <label>
+          Datum
+          <input type="date" id="agendaDate" />
+        </label>
+        <label>
+          Kapper
+          <select id="agendaBarber">
+            <option value="">Alle kappers</option>
+            <option value="barbier-1">Bewar Z.</option>
+            <option value="barbier-2">Zennar Z.</option>
+          </select>
+        </label>
+        <button type="button" class="btn btn--line" id="logoutBtn">Uitloggen</button>
+      </div>
+      <div class="portal__list" id="agendaList"></div>
+      <p class="portal__empty" id="agendaEmpty" hidden>Geen afspraken op deze dag.</p>
+      <p class="portal__error" id="agendaError" hidden></p>
+    </section>
+  </main>
+
+  <script>
+    const TOKEN_KEY = "artofcuts_portal_token";
+    const loginCard = document.getElementById("loginCard");
+    const agendaCard = document.getElementById("agendaCard");
+    const loginForm = document.getElementById("loginForm");
+    const loginError = document.getElementById("loginError");
+    const agendaDate = document.getElementById("agendaDate");
+    const agendaBarber = document.getElementById("agendaBarber");
+    const agendaList = document.getElementById("agendaList");
+    const agendaEmpty = document.getElementById("agendaEmpty");
+    const agendaError = document.getElementById("agendaError");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    function getToken() {
+      return sessionStorage.getItem(TOKEN_KEY);
+    }
+
+    function setToken(token) {
+      sessionStorage.setItem(TOKEN_KEY, token);
+    }
+
+    function clearToken() {
+      sessionStorage.removeItem(TOKEN_KEY);
+    }
+
+    function showLoggedIn() {
+      loginCard.hidden = true;
+      agendaCard.hidden = false;
+    }
+
+    function showLoggedOut() {
+      loginCard.hidden = false;
+      agendaCard.hidden = true;
+    }
+
+    function setTodayOnDateInput() {
+      const today = new Date();
+      agendaDate.value = [
+        today.getFullYear(),
+        String(today.getMonth() + 1).padStart(2, "0"),
+        String(today.getDate()).padStart(2, "0"),
+      ].join("-");
+    }
+
+    async function loadAgenda() {
+      agendaError.hidden = true;
+      agendaEmpty.hidden = true;
+      agendaList.innerHTML = "Laden…";
+
+      const params = new URLSearchParams({ date: agendaDate.value });
+      if (agendaBarber.value) params.set("barber", agendaBarber.value);
+
+      try {
+        const res = await fetch(`/api/portal/appointments?${params}`, {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Kon agenda niet laden");
+
+        agendaList.innerHTML = "";
+        if (!data.appointments.length) {
+          agendaEmpty.hidden = false;
+          return;
+        }
+
+        data.appointments.forEach((item) => {
+          const el = document.createElement("article");
+          el.className = "portal__item";
+          el.innerHTML = `
+            <div class="portal__time">${item.time}</div>
+            <div>
+              <h3>${item.firstName} ${item.lastName}</h3>
+              <p class="portal__meta">${item.serviceName} · ${item.barberName}</p>
+              <p class="portal__meta">${item.phone || "Geen telefoon"}${item.email ? ` · ${item.email}` : ""}</p>
+            </div>
+          `;
+          agendaList.appendChild(el);
+        });
+      } catch (error) {
+        agendaList.innerHTML = "";
+        agendaError.hidden = false;
+        agendaError.textContent = error.message;
+        if (error.message.includes("Niet ingelogd")) {
+          clearToken();
+          showLoggedOut();
+        }
+      }
+    }
+
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      loginError.hidden = true;
+
+      const password = new FormData(loginForm).get("password");
+      try {
+        const res = await fetch("/api/portal/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Inloggen mislukt");
+
+        setToken(data.token);
+        showLoggedIn();
+        setTodayOnDateInput();
+        await loadAgenda();
+      } catch (error) {
+        loginError.hidden = false;
+        loginError.textContent = error.message;
+      }
+    });
+
+    agendaDate.addEventListener("change", loadAgenda);
+    agendaBarber.addEventListener("change", loadAgenda);
+    logoutBtn.addEventListener("click", () => {
+      clearToken();
+      showLoggedOut();
+    });
+
+    if (getToken()) {
+      showLoggedIn();
+      setTodayOnDateInput();
+      loadAgenda();
+    } else {
+      showLoggedOut();
+    }
+  </script>
+</body>
+</html>
