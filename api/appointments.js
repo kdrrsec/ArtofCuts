@@ -1,7 +1,7 @@
 import crypto from "crypto";
-import { ensureSchema, getSql } from "../lib/db.js";
-import { BARBERS, SERVICES, getAllSlotsForDate } from "../lib/schedule.js";
-import { handleOptions, readJsonBody, sendJson } from "../lib/http.js";
+import { ensureSchema, getSql } from "./lib/db.js";
+import { BARBERS, SERVICES, getAllSlotsForDate } from "./lib/schedule.js";
+import { handleOptions, readJsonBody, sendJson } from "./lib/http.js";
 
 function createId() {
   return crypto.randomUUID();

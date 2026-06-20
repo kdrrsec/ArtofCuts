@@ -1,8 +1,8 @@
-import { ensureSchema, getSql } from "../../lib/db.js";
-import { BARBERS, SERVICES } from "../../lib/schedule.js";
-import { getBearerToken, verifyPortalToken } from "../../lib/auth.js";
-import { handleOptions, sendJson } from "../../lib/http.js";
-import { getQuery } from "../../lib/query.js";
+import { ensureSchema, getSql } from "../lib/db.js";
+import { BARBERS, SERVICES } from "../lib/schedule.js";
+import { getBearerToken, verifyPortalToken } from "../lib/auth.js";
+import { handleOptions, sendJson } from "../lib/http.js";
+import { getQuery } from "../lib/query.js";
 
 export default async function handler(req, res) {
   if (handleOptions(req, res)) return;

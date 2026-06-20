@@ -1,7 +1,7 @@
-import { ensureSchema, getSql, isDbConfigured, normalizeDateString } from "../lib/db.js";
-import { getAllSlotsForDate, getBookableDates, BARBERS } from "../lib/schedule.js";
-import { handleOptions, sendJson } from "../lib/http.js";
-import { getQuery } from "../lib/query.js";
+import { ensureSchema, getSql, isDbConfigured, normalizeDateString } from "./lib/db.js";
+import { getAllSlotsForDate, getBookableDates, BARBERS } from "./lib/schedule.js";
+import { handleOptions, sendJson } from "./lib/http.js";
+import { getQuery } from "./lib/query.js";
 
 async function getBookedSlots(barberId, dates) {
   if (!isDbConfigured() || !dates.length) return new Map();

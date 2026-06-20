@@ -1,5 +1,5 @@
-import { ensureSchema, getSql } from "../lib/db.js";
-import { handleOptions, readJsonBody, sendJson } from "../lib/http.js";
+import { ensureSchema, getSql } from "./lib/db.js";
+import { handleOptions, readJsonBody, sendJson } from "./lib/http.js";
 
 export default async function handler(req, res) {
   if (handleOptions(req, res)) return;
