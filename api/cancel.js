@@ -1,6 +1,7 @@
-import { ensureSchema, getSql } from "../../lib/db.js";
-import { BARBERS, SERVICES } from "../../lib/schedule.js";
-import { handleOptions, sendJson } from "../../lib/http.js";
+import { ensureSchema, getSql } from "../lib/db.js";
+import { BARBERS, SERVICES } from "../lib/schedule.js";
+import { handleOptions, sendJson } from "../lib/http.js";
+import { getQuery } from "../lib/query.js";
 
 export default async function handler(req, res) {
   if (handleOptions(req, res)) return;
@@ -10,8 +11,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const url = new URL(req.url, "http://localhost");
-    const token = url.searchParams.get("token");
+    const query = getQuery(req);
+    const token = query.token;
 
     if (!token) {
       return sendJson(res, 400, { error: "Token ontbreekt" });

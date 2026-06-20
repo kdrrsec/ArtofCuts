@@ -1,7 +1,8 @@
-import { ensureSchema, getSql } from "../../../lib/db.js";
-import { BARBERS, SERVICES } from "../../../lib/schedule.js";
-import { getBearerToken, verifyPortalToken } from "../../../lib/auth.js";
-import { handleOptions, sendJson } from "../../../lib/http.js";
+import { ensureSchema, getSql } from "../../lib/db.js";
+import { BARBERS, SERVICES } from "../../lib/schedule.js";
+import { getBearerToken, verifyPortalToken } from "../../lib/auth.js";
+import { handleOptions, sendJson } from "../../lib/http.js";
+import { getQuery } from "../../lib/query.js";
 
 export default async function handler(req, res) {
   if (handleOptions(req, res)) return;
@@ -16,9 +17,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const url = new URL(req.url, "http://localhost");
-    const date = url.searchParams.get("date");
-    const barberId = url.searchParams.get("barber");
+    const query = getQuery(req);
+    const date = query.date;
+    const barberId = query.barber;
 
     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return sendJson(res, 400, { error: "Kies een geldige datum" });
@@ -41,7 +42,7 @@ export default async function handler(req, res) {
           email,
           phone
         FROM appointments
-        WHERE appointment_date = ${date}::date
+        WHERE appointment_date = ${date}
           AND barber_id = ${barberId}
           AND cancelled_at IS NULL
         ORDER BY appointment_time ASC
@@ -59,7 +60,7 @@ export default async function handler(req, res) {
           email,
           phone
         FROM appointments
-        WHERE appointment_date = ${date}::date
+        WHERE appointment_date = ${date}
           AND cancelled_at IS NULL
         ORDER BY appointment_time ASC
       `;

@@ -80,8 +80,47 @@ const bookerCancelLink = document.getElementById("bookerCancelLink");
 let availabilityByDate = new Map();
 let bookableDates = [];
 
+const SLOT_MINUTES = 45;
+
 function toMinutes([hours, minutes]) {
   return hours * 60 + minutes;
+}
+
+function getLocalSlotsForDate(dateStr) {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  const hours = openingHours[date.getDay()];
+  if (!hours) return [];
+
+  const start = toMinutes(hours.open);
+  const end = toMinutes(hours.close);
+  const now = new Date();
+  const isToday = isSameDay(date, now);
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const slots = [];
+
+  let time = start;
+  while (time + SLOT_MINUTES <= end) {
+    if (!isToday || time > nowMinutes) {
+      slots.push(`${String(Math.floor(time / 60)).padStart(2, "0")}:${String(time % 60).padStart(2, "0")}`);
+    }
+    time += SLOT_MINUTES;
+  }
+
+  return slots;
+}
+
+function buildLocalAvailability(dates) {
+  return dates.map((date) => {
+    const slots = getLocalSlotsForDate(date);
+    return {
+      date,
+      total: slots.length,
+      booked: 0,
+      fullness: 0,
+      slots,
+    };
+  });
 }
 
 function isSameDay(a, b) {
@@ -233,6 +272,7 @@ async function fetchAvailability() {
   if (!barber || !daysWrap) return;
 
   if (bookerDetails) bookerDetails.hidden = true;
+  hideBookingError();
   bookableDates = getLocalBookableDates();
   const params = new URLSearchParams({
     barber,
@@ -240,16 +280,34 @@ async function fetchAvailability() {
   });
 
   try {
-    const res = await fetch(`/api/availability?${params}`);
+    const res = await fetch(`/api/availability?${params.toString()}`);
+    const contentType = res.headers.get("content-type") || "";
+
+    if (!contentType.includes("application/json")) {
+      throw new Error("API niet bereikbaar");
+    }
+
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Kon beschikbaarheid niet laden");
 
     availabilityByDate = new Map(data.days.map((day) => [day.date, day]));
     renderBookingDays(getSelectedDate());
+
+    if (!data.dbConnected && bookerError) {
+      bookerError.hidden = false;
+      bookerError.textContent =
+        "Tijden zijn zichtbaar, maar boeken werkt pas nadat de database op Vercel is ingesteld.";
+    }
   } catch (error) {
+    console.warn("Availability fallback:", error);
+    const localDays = buildLocalAvailability(bookableDates);
+    availabilityByDate = new Map(localDays.map((day) => [day.date, day]));
+    renderBookingDays(getSelectedDate());
+
     if (bookerError) {
       bookerError.hidden = false;
-      bookerError.textContent = error.message;
+      bookerError.textContent =
+        "Live boeken is nog niet actief (database ontbreekt). Je kunt wel tijden bekijken, maar bevestigen werkt pas na database-setup.";
     }
   }
 }

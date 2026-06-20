@@ -1,5 +1,5 @@
-import { verifyPortalPassword, createPortalToken } from "../../lib/auth.js";
-import { handleOptions, readJsonBody, sendJson } from "../../lib/http.js";
+import { verifyPortalPassword, createPortalToken } from "../lib/auth.js";
+import { handleOptions, readJsonBody, sendJson } from "../lib/http.js";
 
 export default async function handler(req, res) {
   if (handleOptions(req, res)) return;

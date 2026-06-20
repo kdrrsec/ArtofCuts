@@ -1,7 +1,7 @@
 import crypto from "crypto";
-import { ensureSchema, getSql } from "../../lib/db.js";
-import { BARBERS, SERVICES, getAllSlotsForDate } from "../../lib/schedule.js";
-import { handleOptions, readJsonBody, sendJson } from "../../lib/http.js";
+import { ensureSchema, getSql } from "../lib/db.js";
+import { BARBERS, SERVICES, getAllSlotsForDate } from "../lib/schedule.js";
+import { handleOptions, readJsonBody, sendJson } from "../lib/http.js";
 
 function createId() {
   return crypto.randomUUID();
@@ -58,7 +58,7 @@ export default async function handler(req, res) {
     const existing = await sql`
       SELECT id FROM appointments
       WHERE barber_id = ${barber}
-        AND appointment_date = ${date}::date
+        AND appointment_date = ${date}
         AND appointment_time = ${time}
         AND cancelled_at IS NULL
       LIMIT 1
@@ -76,7 +76,7 @@ export default async function handler(req, res) {
         id, barber_id, service, appointment_date, appointment_time,
         first_name, last_name, email, phone, cancel_token
       ) VALUES (
-        ${id}, ${barber}, ${service}, ${date}::date, ${time},
+        ${id}, ${barber}, ${service}, ${date}, ${time},
         ${firstName.trim()}, ${lastName.trim()},
         ${email?.trim() || null}, ${phone?.trim() || null}, ${cancelToken}
       )
