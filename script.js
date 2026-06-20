@@ -65,8 +65,6 @@ const openingHours = {
 };
 
 const SLOT_MINUTES = 45;
-const LUNCH_START = 12 * 60;
-const LUNCH_END = 13 * 60;
 const dayNames = ["zo", "ma", "di", "wo", "do", "vr", "za"];
 const monthNames = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
 
@@ -101,10 +99,6 @@ function getSlotsForDate(date) {
 
   let time = start;
   while (time + SLOT_MINUTES <= end) {
-    if (time >= LUNCH_START && time < LUNCH_END) {
-      time = LUNCH_END;
-      continue;
-    }
     if (isToday && time <= nowMinutes) {
       time += SLOT_MINUTES;
       continue;
