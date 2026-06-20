@@ -528,6 +528,12 @@ a { color: inherit; text-decoration: none; }
   margin-top: 0.9rem; text-align: center;
   font-size: 0.74rem; color: var(--muted-light); letter-spacing: 0.03em;
 }
+.booker__empty {
+  width: 100%;
+  font-size: 0.82rem;
+  color: var(--muted-light);
+  letter-spacing: 0.02em;
+}
 
 /* ===========================================================
    INFO (hours + contact)

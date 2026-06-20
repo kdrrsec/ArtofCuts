@@ -54,41 +54,156 @@ if ("IntersectionObserver" in window) {
    Afspraak-preview (eigen boekingssysteem — wordt aangesloten)
    ----------------------------------------------------------- */
 
+const openingHours = {
+  0: null, // zondag
+  1: null, // maandag
+  2: { open: [10, 0], close: [18, 0] }, // dinsdag
+  3: { open: [10, 0], close: [18, 0] }, // woensdag
+  4: { open: [10, 0], close: [20, 0] }, // donderdag
+  5: { open: [10, 0], close: [18, 0] }, // vrijdag
+  6: { open: [9, 0], close: [16, 30] }, // zaterdag
+};
+
+const SLOT_MINUTES = 45;
+const LUNCH_START = 12 * 60;
+const LUNCH_END = 13 * 60;
+const dayNames = ["zo", "ma", "di", "wo", "do", "vr", "za"];
+const monthNames = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
+
+function toMinutes([hours, minutes]) {
+  return hours * 60 + minutes;
+}
+
+function formatTime(totalMinutes) {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function isSameDay(a, b) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function getSlotsForDate(date) {
+  const hours = openingHours[date.getDay()];
+  if (!hours) return [];
+
+  const start = toMinutes(hours.open);
+  const end = toMinutes(hours.close);
+  const now = new Date();
+  const isToday = isSameDay(date, now);
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const slots = [];
+
+  let time = start;
+  while (time + SLOT_MINUTES <= end) {
+    if (time >= LUNCH_START && time < LUNCH_END) {
+      time = LUNCH_END;
+      continue;
+    }
+    if (isToday && time <= nowMinutes) {
+      time += SLOT_MINUTES;
+      continue;
+    }
+    slots.push(formatTime(time));
+    time += SLOT_MINUTES;
+  }
+
+  return slots;
+}
+
+function isDateBookable(date) {
+  return getSlotsForDate(date).length > 0;
+}
+
 // Single-select helper for a group of buttons
-function singleSelect(container, selector) {
+function singleSelect(container, selector, onChange) {
   if (!container) return;
   container.addEventListener("click", (e) => {
     const btn = e.target.closest(selector);
     if (!btn || btn.disabled || btn.classList.contains("is-closed")) return;
     container.querySelectorAll(selector).forEach((b) => b.classList.remove("is-active"));
     btn.classList.add("is-active");
+    if (onChange) onChange(btn);
   });
 }
 
-// Build the next open days (shop closed on Sunday=0 and Monday=1)
 const daysWrap = document.getElementById("bookerDays");
-if (daysWrap) {
-  const dayNames = ["zo", "ma", "di", "wo", "do", "vr", "za"];
-  const closedDays = [0, 1]; // zondag, maandag
+const timesWrap = document.getElementById("bookerTimes");
+
+function renderTimeSlots(date) {
+  if (!timesWrap) return;
+  timesWrap.innerHTML = "";
+
+  const slots = getSlotsForDate(date);
+  if (!slots.length) {
+    timesWrap.innerHTML = '<p class="booker__empty">Geen tijden meer beschikbaar op deze dag.</p>';
+    return;
+  }
+
+  slots.forEach((time, index) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "slot" + (index === 0 ? " is-active" : "");
+    btn.textContent = time;
+    timesWrap.appendChild(btn);
+  });
+}
+
+function getSelectedDayDate() {
+  const active = daysWrap?.querySelector(".day.is-active");
+  if (!active?.dataset.date) return null;
+  const [year, month, day] = active.dataset.date.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function buildBookingDays() {
+  if (!daysWrap) return;
+
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   let added = 0;
-  for (let i = 0; added < 6 && i < 21; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    if (closedDays.includes(d.getDay())) continue;
+
+  for (let offset = 0; added < 8 && offset < 42; offset++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + offset);
+    if (!isDateBookable(date)) continue;
+
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "day" + (added === 0 ? " is-active" : "");
-    btn.innerHTML = `<small>${dayNames[d.getDay()]}</small><b>${d.getDate()}</b>`;
+    btn.dataset.date = [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0"),
+    ].join("-");
+
+    const showMonth = date.getMonth() !== today.getMonth() || date.getDate() === 1;
+    btn.innerHTML = showMonth
+      ? `<small>${dayNames[date.getDay()]} ${monthNames[date.getMonth()]}</small><b>${date.getDate()}</b>`
+      : `<small>${dayNames[date.getDay()]}</small><b>${date.getDate()}</b>`;
+
     daysWrap.appendChild(btn);
     added++;
   }
+
+  const firstDay = getSelectedDayDate();
+  if (firstDay) renderTimeSlots(firstDay);
 }
+
+buildBookingDays();
 
 singleSelect(document.querySelector(".booker__options"), ".chip");
 singleSelect(document.getElementById("bookerBarbers"), ".barber-pick");
-singleSelect(daysWrap, ".day");
-singleSelect(document.querySelector(".booker__times"), ".slot");
+singleSelect(daysWrap, ".day", () => {
+  const selectedDay = getSelectedDayDate();
+  if (selectedDay) renderTimeSlots(selectedDay);
+});
+singleSelect(timesWrap, ".slot");
 
 // Pre-select barber when clicking a team card
 function selectBarber(id) {
