@@ -23,14 +23,93 @@
       margin-bottom: 1.2rem;
     }
     .portal__login { display: grid; gap: 0.8rem; max-width: 360px; }
-    .portal__login input, .portal__toolbar input, .portal__toolbar select {
+    .portal__login input, .portal__toolbar select {
       width: 100%;
       border: 1px solid var(--line-light);
       background: rgba(246, 241, 231, 0.05);
       color: var(--cream);
       border-radius: 12px;
-      padding: 0.75rem 0.9rem;
+      padding: 0.85rem 1rem;
       font: inherit;
+      font-size: 1rem;
+    }
+    .portal__date-section { grid-column: 1 / -1; }
+    .portal__date-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.65rem;
+    }
+    .portal__date-head span {
+      font-size: 0.82rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted-light);
+    }
+    .portal__today {
+      font-family: var(--body);
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--red);
+      background: transparent;
+      border: 1px solid rgba(204, 43, 43, 0.45);
+      border-radius: 999px;
+      padding: 0.45rem 0.85rem;
+      cursor: pointer;
+    }
+    .portal__today:hover { background: rgba(204, 43, 43, 0.12); }
+    .portal__days {
+      display: flex;
+      gap: 0.65rem;
+      overflow-x: auto;
+      padding: 0.25rem 0 0.5rem;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-color: rgba(204, 43, 43, 0.4) transparent;
+    }
+    .portal__days .day {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.15rem;
+      min-width: 80px;
+      padding: 0.9rem 0.55rem 1rem;
+      border: 1px solid var(--line-light);
+      border-radius: 16px;
+      background: rgba(246, 241, 231, 0.05);
+      color: var(--cream);
+      cursor: pointer;
+      font-family: var(--body);
+      transition: border-color 0.25s var(--ease), background 0.25s var(--ease), transform 0.2s var(--ease);
+    }
+    .portal__days .day:hover { border-color: var(--red); transform: translateY(-1px); }
+    .portal__days .day.is-active {
+      background: var(--red);
+      border-color: var(--red);
+      color: #fff;
+    }
+    .portal__days .day small {
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted-light);
+    }
+    .portal__days .day.is-active small { color: rgba(255, 255, 255, 0.85); }
+    .portal__days .day b {
+      font-family: var(--serif);
+      font-size: 1.55rem;
+      font-weight: 500;
+      line-height: 1;
+    }
+    .portal__days .day.is-closed { opacity: 0.45; }
+    .portal__selected-label {
+      margin-top: 0.35rem;
+      font-family: var(--serif);
+      font-size: 1.15rem;
+      color: var(--cream);
     }
     .portal__toolbar {
       display: grid;
@@ -85,9 +164,13 @@
     .portal__error { color: #ff8f8f; }
     .portal__back { color: var(--muted-light); font-size: 0.85rem; }
     @media (max-width: 700px) {
+      .portal { padding: 2rem 1rem 3rem; }
       .portal__toolbar { grid-template-columns: 1fr; }
       .portal__item { grid-template-columns: 1fr; }
-      .portal__cancel { justify-self: start; }
+      .portal__cancel { justify-self: start; width: 100%; padding: 0.75rem 1rem; }
+      .portal__days .day { min-width: 88px; padding: 1rem 0.6rem 1.1rem; }
+      .portal__days .day b { font-size: 1.75rem; }
+      .portal__toolbar select { font-size: 1.05rem; padding: 1rem; }
     }
   </style>
 </head>
@@ -113,10 +196,14 @@
 
     <section class="portal__card" id="agendaCard" hidden>
       <div class="portal__toolbar">
-        <label>
-          Datum
-          <input type="date" id="agendaDate" />
-        </label>
+        <div class="portal__date-section">
+          <div class="portal__date-head">
+            <span>Datum</span>
+            <button type="button" class="portal__today" id="agendaToday">Vandaag</button>
+          </div>
+          <div class="portal__days" id="agendaDays"></div>
+          <p class="portal__selected-label" id="agendaDateLabel"></p>
+        </div>
         <label>
           Kapper
           <select id="agendaBarber">
@@ -140,7 +227,9 @@
     const agendaCard = document.getElementById("agendaCard");
     const loginForm = document.getElementById("loginForm");
     const loginError = document.getElementById("loginError");
-    const agendaDate = document.getElementById("agendaDate");
+    const agendaDays = document.getElementById("agendaDays");
+    const agendaDateLabel = document.getElementById("agendaDateLabel");
+    const agendaToday = document.getElementById("agendaToday");
     const agendaBarber = document.getElementById("agendaBarber");
     const agendaList = document.getElementById("agendaList");
     const agendaEmpty = document.getElementById("agendaEmpty");
@@ -170,13 +259,67 @@
       agendaCard.hidden = true;
     }
 
+    const dayNames = ["zo", "ma", "di", "wo", "do", "vr", "za"];
+    const dayNamesFull = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
+    const monthNames = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"];
+    let selectedDate = null;
+
+    function formatDateString(date) {
+      return [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, "0"),
+        String(date.getDate()).padStart(2, "0"),
+      ].join("-");
+    }
+
+    function getSelectedDate() {
+      return selectedDate || agendaDays.querySelector(".day.is-active")?.dataset.date || null;
+    }
+
+    function updateDateLabel(dateStr) {
+      if (!dateStr || !agendaDateLabel) return;
+      const [year, month, day] = dateStr.split("-").map(Number);
+      const date = new Date(year, month - 1, day);
+      agendaDateLabel.textContent = `${dayNamesFull[date.getDay()]} ${day} ${monthNames[date.getMonth()]} ${year}`;
+    }
+
+    function buildPortalDays(preferredDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStr = formatDateString(today);
+      selectedDate = preferredDate || getSelectedDate() || todayStr;
+
+      agendaDays.innerHTML = "";
+      for (let offset = 0; offset < 21; offset++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() + offset);
+        const dateStr = formatDateString(date);
+        const isClosed = date.getDay() === 0 || date.getDay() === 1;
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "day" + (dateStr === selectedDate ? " is-active" : "") + (isClosed ? " is-closed" : "");
+        btn.dataset.date = dateStr;
+        btn.innerHTML = `<small>${dayNames[date.getDay()]}</small><b>${date.getDate()}</b>`;
+        btn.addEventListener("click", () => {
+          agendaDays.querySelectorAll(".day").forEach((d) => d.classList.remove("is-active"));
+          btn.classList.add("is-active");
+          selectedDate = dateStr;
+          updateDateLabel(dateStr);
+          loadAgenda();
+        });
+        agendaDays.appendChild(btn);
+      }
+
+      updateDateLabel(selectedDate);
+      const activeBtn = agendaDays.querySelector(`[data-date="${selectedDate}"]`);
+      if (activeBtn) {
+        activeBtn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+      }
+    }
+
     function setTodayOnDateInput() {
       const today = new Date();
-      agendaDate.value = [
-        today.getFullYear(),
-        String(today.getMonth() + 1).padStart(2, "0"),
-        String(today.getDate()).padStart(2, "0"),
-      ].join("-");
+      buildPortalDays(formatDateString(today));
     }
 
     async function cancelAppointment(id, name, time) {
@@ -217,7 +360,7 @@
       agendaEmpty.hidden = true;
       agendaList.innerHTML = "Laden…";
 
-      const params = new URLSearchParams({ date: agendaDate.value });
+      const params = new URLSearchParams({ date: getSelectedDate() });
       if (agendaBarber.value) params.set("barber", agendaBarber.value);
 
       try {
@@ -286,7 +429,10 @@
       }
     });
 
-    agendaDate.addEventListener("change", loadAgenda);
+    agendaToday.addEventListener("click", () => {
+      setTodayOnDateInput();
+      loadAgenda();
+    });
     agendaBarber.addEventListener("change", loadAgenda);
     logoutBtn.addEventListener("click", () => {
       clearToken();
