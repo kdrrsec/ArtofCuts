@@ -772,13 +772,15 @@ a { color: inherit; text-decoration: none; }
     inset: 0;
     background: rgba(22, 19, 13, 0.45);
     opacity: 0;
-    transition: opacity 0.35s var(--ease);
+    visibility: hidden;
+    transition: opacity 0.35s var(--ease), visibility 0.35s var(--ease);
     cursor: pointer;
     pointer-events: none;
   }
 
   .nav-menu.is-open .nav-menu__backdrop {
     opacity: 1;
+    visibility: visible;
     pointer-events: auto;
   }
 
@@ -802,12 +804,16 @@ a { color: inherit; text-decoration: none; }
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     transform: translateX(100%);
-    transition: transform 0.4s var(--ease);
-    pointer-events: auto;
+    visibility: hidden;
+    transition: transform 0.4s var(--ease), visibility 0.4s var(--ease);
+    pointer-events: none;
+    will-change: transform;
   }
 
   .nav-menu.is-open .nav-menu__panel {
     transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
   }
 
   .nav-menu__panel a {
@@ -831,7 +837,8 @@ a { color: inherit; text-decoration: none; }
   .nav__toggle { display: flex; }
   .nav__right .btn { display: none; }
 
-  body.menu-open {
+  html.menu-open,
+  html.menu-open body {
     overflow: hidden;
     touch-action: none;
   }

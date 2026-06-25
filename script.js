@@ -29,79 +29,15 @@ const navLinks = document.getElementById("navLinks");
 const navBackdrop = document.getElementById("navBackdrop");
 const navMenu = document.getElementById("navMenu");
 const navLogo = document.querySelector(".nav__logo");
-const navMenuPanel = navMenu?.querySelector(".nav-menu__panel");
-let scrollLockY = 0;
-let scrollUnlockTimer = null;
-let scrollUnlockListener = null;
-
-function lockPageScroll() {
-  scrollLockY = window.scrollY;
-  document.body.dataset.scrollY = String(scrollLockY);
-  document.body.style.position = "fixed";
-  document.body.style.top = `-${scrollLockY}px`;
-  document.body.style.left = "0";
-  document.body.style.right = "0";
-  document.body.style.width = "100%";
-  lastScrollY = scrollLockY;
-}
-
-function unlockPageScroll() {
-  const y = Number(document.body.dataset.scrollY || scrollLockY || 0);
-  document.body.style.position = "";
-  document.body.style.top = "";
-  document.body.style.left = "";
-  document.body.style.right = "";
-  document.body.style.width = "";
-  delete document.body.dataset.scrollY;
-  window.scrollTo(0, y);
-  lastScrollY = y;
-}
-
-function clearScrollUnlock() {
-  if (scrollUnlockTimer) {
-    clearTimeout(scrollUnlockTimer);
-    scrollUnlockTimer = null;
-  }
-  if (scrollUnlockListener && navMenuPanel) {
-    navMenuPanel.removeEventListener("transitionend", scrollUnlockListener);
-    scrollUnlockListener = null;
-  }
-}
-
-function scheduleScrollUnlock() {
-  clearScrollUnlock();
-
-  const finishUnlock = () => {
-    clearScrollUnlock();
-    unlockPageScroll();
-  };
-
-  if (navMenuPanel) {
-    scrollUnlockListener = (event) => {
-      if (event.propertyName === "transform") finishUnlock();
-    };
-    navMenuPanel.addEventListener("transitionend", scrollUnlockListener);
-  }
-
-  scrollUnlockTimer = window.setTimeout(finishUnlock, 450);
-}
 
 function setMenuOpen(open) {
-  clearScrollUnlock();
   nav.classList.toggle("open", open);
   nav.classList.remove("nav--hidden");
   navMenu.classList.toggle("is-open", open);
   navMenu.setAttribute("aria-hidden", open ? "false" : "true");
   navToggle.setAttribute("aria-expanded", open ? "true" : "false");
   if (navBackdrop) navBackdrop.setAttribute("aria-hidden", open ? "false" : "true");
-  document.body.classList.toggle("menu-open", open);
-
-  if (open) {
-    lockPageScroll();
-    return;
-  }
-
-  scheduleScrollUnlock();
+  document.documentElement.classList.toggle("menu-open", open);
 }
 
 navToggle.addEventListener("click", (event) => {
