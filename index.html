@@ -35,7 +35,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=3" />
 
   <script type="application/ld+json">
   {
@@ -75,30 +75,23 @@
 <body>
 
   <!-- NAV -->
-  <header class="nav" id="nav">
-    <div class="nav__inner">
-      <a href="#home" class="nav__logo">
-        <span class="logo__icon" style="--icon: url('images/razor.png')" role="img" aria-label="Scheermes"></span>
-        <span class="logo__text">Art<span class="accent">of</span>Cuts</span>
-      </a>
+  <div class="nav-wrap" id="nav">
+    <div class="nav__bar">
+      <div class="nav__inner">
+        <a href="#home" class="nav__logo">
+          <span class="logo__icon" style="--icon: url('images/razor.png')" role="img" aria-label="Scheermes"></span>
+          <span class="logo__text">Art<span class="accent">of</span>Cuts</span>
+        </a>
 
-      <nav class="nav__links" id="navLinks">
-        <a href="#over">Over ons</a>
-        <a href="#diensten">Diensten</a>
-        <a href="#team">Team</a>
-        <a href="#afspraak">Afspraak</a>
-        <a href="#tijden">Openingstijden</a>
-        <a href="#contact">Contact</a>
-      </nav>
-
-      <div class="nav__right">
-        <a href="#afspraak" class="btn btn--red">Maak afspraak</a>
-        <button class="nav__toggle" id="navToggle" aria-label="Menu">
-          <span></span><span></span><span></span>
-        </button>
+        <div class="nav__right">
+          <a href="#afspraak" class="btn btn--red">Maak afspraak</a>
+          <button class="nav__toggle" id="navToggle" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
       </div>
     </div>
-  </header>
+  </div>
 
   <!-- HERO -->
   <section class="hero" id="home">
@@ -421,7 +414,19 @@
     </div>
   </footer>
 
-  <script src="script.js?v=2"></script>
+  <div class="nav-menu" id="navMenu" aria-hidden="true">
+    <button type="button" class="nav-menu__backdrop" id="navBackdrop" aria-hidden="true" tabindex="-1"></button>
+    <nav class="nav-menu__panel" id="navLinks">
+      <a href="#over">Over ons</a>
+      <a href="#diensten">Diensten</a>
+      <a href="#team">Team</a>
+      <a href="#afspraak">Afspraak</a>
+      <a href="#tijden">Openingstijden</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+
+  <script src="script.js?v=3"></script>
 </body>
 </html>
 
