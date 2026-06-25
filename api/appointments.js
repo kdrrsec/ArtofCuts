@@ -90,7 +90,7 @@ export default async function handler(req, res) {
     return sendJson(res, 201, {
       id,
       cancelToken,
-      cancelUrl: `${origin}/annuleren.html?token=${cancelToken}`,
+      cancelUrl: `${origin}/annuleren?token=${cancelToken}`,
       message: "Afspraak bevestigd",
     });
   } catch (error) {

@@ -2,6 +2,47 @@
   "env": {
     "PORTAL_PASSWORD": "Ronaldo7"
   },
+  "redirects": [
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/beheer.html",
+      "destination": "/404.html",
+      "statusCode": 404
+    },
+    {
+      "source": "/annuleren.html",
+      "destination": "/annuleren",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/annuleren",
+      "destination": "/annuleren.html"
+    },
+    {
+      "source": "/kapper/agenda",
+      "destination": "/beheer.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/kapper/agenda",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+      ]
+    },
+    {
+      "source": "/annuleren",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+      ]
+    }
+  ],
   "functions": {
     "api/**/*.js": {
       "maxDuration": 10,

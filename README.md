@@ -43,10 +43,10 @@ Het boekingssysteem draait op Vercel Functions + Neon Postgres.
 1. Dienst, kapper, dag en tijd kiezen
 2. Voornaam + achternaam invullen (mail/telefoon optioneel)
 3. Bevestigen → tijdslot is bezet voor anderen
-4. Annuleren via persoonlijke link op `annuleren.html`
+4. Annuleren via persoonlijke link op `/annuleren`
 
 ### Kapper-portaal
-- Open `beheer.html`
+- Open `/kapper/agenda` (niet publiek gelinkt; `/beheer.html` geeft 404)
 - Inloggen met `PORTAL_PASSWORD`
 - Agenda per dag en per kapper inzien
 
