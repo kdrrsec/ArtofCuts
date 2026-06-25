@@ -92,20 +92,15 @@ export function getAllSlotsForDate(dateInput) {
   return slots;
 }
 
-export function isDateOpen(dateStr) {
-  return getAllSlotsForDate(dateStr).length > 0;
-}
-
-export function getBookableDates(count = 14, maxLookahead = 56) {
+export function getBookableDates(count = 28) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const dates = [];
 
-  for (let offset = 0; dates.length < count && offset < maxLookahead; offset++) {
+  for (let offset = 0; offset < count; offset++) {
     const date = new Date(today);
     date.setDate(today.getDate() + offset);
-    const dateStr = formatDate(date);
-    if (isDateOpen(dateStr)) dates.push(dateStr);
+    dates.push(formatDate(date));
   }
 
   return dates;

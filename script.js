@@ -147,15 +147,15 @@ function formatDateString(date) {
   ].join("-");
 }
 
-function getLocalBookableDates(count = 14) {
+function getLocalBookableDates(count = 28) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const dates = [];
 
-  for (let offset = 0; dates.length < count && offset < 42; offset++) {
+  for (let offset = 0; offset < count; offset++) {
     const date = new Date(today);
     date.setDate(today.getDate() + offset);
-    if (isDateLocallyOpen(date)) dates.push(formatDateString(date));
+    dates.push(formatDateString(date));
   }
 
   return dates;
@@ -254,7 +254,7 @@ function renderBookingDays(preferredDate) {
 
   bookableDates.forEach((dateStr) => {
     const dayData = availabilityByDate.get(dateStr);
-    if (!dayData) return;
+    if (!dayData || !dayData.slots.length) return;
 
     const btn = renderDayButton(dateStr, dayData, dateStr === activeDate, today);
     daysWrap.appendChild(btn);
