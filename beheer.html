@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="styles.css" />
   <style>
     body { background: var(--ink); color: var(--cream); min-height: 100vh; }
-    .portal { max-width: 920px; margin: 0 auto; padding: 3rem 1.5rem 4rem; }
+    .portal { max-width: 920px; margin: 0 auto; padding: 3rem 1.5rem 4rem; min-width: 0; }
     .portal__head { margin-bottom: 2rem; }
     .portal__head-row {
       display: flex;
@@ -31,6 +31,8 @@
       border-radius: 18px;
       padding: 1.5rem;
       margin-bottom: 1.2rem;
+      max-width: 100%;
+      overflow: hidden;
     }
     .portal__login { display: grid; gap: 0.8rem; max-width: 360px; }
     .portal__login input {
@@ -43,7 +45,11 @@
       font: inherit;
       font-size: 1rem;
     }
-    .portal__barber-section { grid-column: 1 / -1; }
+    .portal__barber-section {
+      grid-column: 1 / -1;
+      min-width: 0;
+      max-width: 100%;
+    }
     .portal__barber-section > span {
       display: block;
       font-size: 0.82rem;
@@ -75,7 +81,11 @@
       border-color: var(--red);
       color: #fff;
     }
-    .portal__date-section { grid-column: 1 / -1; }
+    .portal__date-section {
+      grid-column: 1 / -1;
+      min-width: 0;
+      max-width: 100%;
+    }
     .portal__date-head {
       display: flex;
       align-items: center;
@@ -103,13 +113,29 @@
       cursor: pointer;
     }
     .portal__today:hover { background: rgba(204, 43, 43, 0.12); }
+    .portal__days-wrap {
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+    }
     .portal__days {
       display: flex;
       gap: 0.65rem;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
       overflow-x: auto;
+      overflow-y: hidden;
       padding: 0.25rem 0 0.5rem;
       -webkit-overflow-scrolling: touch;
+      overscroll-behavior-x: contain;
       scrollbar-color: rgba(204, 43, 43, 0.4) transparent;
+      scrollbar-width: thin;
+    }
+    .portal__days::-webkit-scrollbar { height: 6px; }
+    .portal__days::-webkit-scrollbar-thumb {
+      background: rgba(204, 43, 43, 0.45);
+      border-radius: 999px;
     }
     .portal__days .day {
       flex: 0 0 auto;
@@ -157,6 +183,8 @@
       display: grid;
       gap: 1rem;
       margin-bottom: 1rem;
+      min-width: 0;
+      max-width: 100%;
     }
     .portal__list { display: grid; gap: 0.75rem; }
     .portal__item {
@@ -247,7 +275,9 @@
             <span>Datum</span>
             <button type="button" class="portal__today" id="agendaToday">Vandaag</button>
           </div>
-          <div class="portal__days" id="agendaDays"></div>
+          <div class="portal__days-wrap">
+            <div class="portal__days" id="agendaDays"></div>
+          </div>
           <p class="portal__selected-label" id="agendaDateLabel"></p>
         </div>
         <div class="portal__barber-section">
