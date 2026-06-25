@@ -132,7 +132,7 @@ a { color: inherit; text-decoration: none; }
   gap: 2rem;
 }
 
-.nav__logo { display: inline-flex; align-items: center; gap: 0.55rem; }
+.nav__logo { display: inline-flex; align-items: center; gap: 0.55rem; position: relative; z-index: 1; }
 .logo__text {
   font-family: var(--display);
   font-size: 1.85rem;
@@ -817,6 +817,15 @@ a { color: inherit; text-decoration: none; }
   .nav-wrap.open {
     top: 0;
     z-index: 202;
+  }
+
+  .nav-wrap.open .nav__logo {
+    pointer-events: none;
+  }
+
+  .nav-wrap.open .nav__toggle {
+    position: relative;
+    z-index: 203;
   }
 
   .nav__toggle { display: flex; }
