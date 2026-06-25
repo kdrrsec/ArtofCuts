@@ -202,6 +202,98 @@
     .portal__empty, .portal__error { color: var(--muted-light); font-size: 0.92rem; }
     .portal__error { color: #ff8f8f; }
     .portal__back { color: var(--muted-light); font-size: 0.85rem; }
+    .portal__open-section {
+      margin: 1.25rem 0 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--line-light);
+    }
+    .portal__open-section h2 {
+      font-family: var(--serif);
+      font-size: 1.35rem;
+      margin-bottom: 0.35rem;
+    }
+    .portal__open-lead {
+      color: var(--muted-light);
+      font-size: 0.88rem;
+      margin-bottom: 1rem;
+    }
+    .portal__open-form {
+      display: grid;
+      gap: 0.85rem;
+    }
+    .portal__open-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    .portal__open-form label {
+      display: grid;
+      gap: 0.35rem;
+      font-size: 0.8rem;
+      color: var(--muted-light);
+    }
+    .portal__open-form input,
+    .portal__open-form select {
+      border: 1px solid var(--line-light);
+      background: rgba(246, 241, 231, 0.05);
+      color: var(--cream);
+      border-radius: 12px;
+      padding: 0.75rem 0.9rem;
+      font: inherit;
+      font-size: 0.95rem;
+      color-scheme: dark;
+    }
+    .portal__open-modes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+    }
+    .portal__open-mode {
+      font-family: var(--body);
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--cream);
+      background: rgba(246, 241, 231, 0.05);
+      border: 1px solid var(--line-light);
+      border-radius: 999px;
+      padding: 0.65rem 1rem;
+      cursor: pointer;
+    }
+    .portal__open-mode.is-active {
+      background: var(--red);
+      border-color: var(--red);
+      color: #fff;
+    }
+    .portal__open-fields[hidden] { display: none; }
+    .portal__override-list {
+      display: grid;
+      gap: 0.55rem;
+      margin-top: 1rem;
+    }
+    .portal__override-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.75rem 0.9rem;
+      border: 1px solid var(--line-light);
+      border-radius: 12px;
+      background: rgba(246, 241, 231, 0.03);
+    }
+    .portal__override-item span { font-size: 0.88rem; color: var(--cream); }
+    .portal__override-remove {
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--red);
+      background: transparent;
+      border: 1px solid rgba(204, 43, 43, 0.45);
+      border-radius: 999px;
+      padding: 0.4rem 0.75rem;
+      cursor: pointer;
+    }
+    .portal__override-remove:hover { background: var(--red); color: #fff; }
     @media (max-width: 700px) {
       .portal { padding: 2rem 1rem 3rem; }
       .portal__toolbar { grid-template-columns: 1fr; }
@@ -212,6 +304,7 @@
       .portal__barber { font-size: 1rem; padding: 0.85rem 1.25rem; }
       .portal__head-row { flex-direction: column; align-items: stretch; }
       .portal__logout { width: 100%; margin-top: 0; }
+      .portal__open-row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -259,6 +352,54 @@
           </div>
         </div>
       </div>
+
+      <div class="portal__open-section">
+        <h2>Extra openzetten</h2>
+        <p class="portal__open-lead">Open soms een extra dag of tijd zodat klanten kunnen boeken.</p>
+        <form class="portal__open-form" id="openForm">
+          <div>
+            <span class="portal__open-lead" style="display:block;margin-bottom:0.55rem;">Wat wil je openzetten?</span>
+            <div class="portal__open-modes" id="openModes">
+              <button type="button" class="portal__open-mode is-active" data-mode="day">Hele dag</button>
+              <button type="button" class="portal__open-mode" data-mode="time">Enkele tijd</button>
+            </div>
+          </div>
+          <div class="portal__open-row">
+            <label>
+              Datum
+              <input type="date" name="date" id="openDate" required />
+            </label>
+            <label>
+              Kapper
+              <select name="barber" id="openBarber" required>
+                <option value="bewar">Bewar Z.</option>
+                <option value="zennar">Zennar Z.</option>
+              </select>
+            </label>
+          </div>
+          <div class="portal__open-fields" id="openDayFields">
+            <div class="portal__open-row">
+              <label>
+                Van
+                <input type="time" name="openTime" value="10:00" />
+              </label>
+              <label>
+                Tot
+                <input type="time" name="closeTime" value="18:00" />
+              </label>
+            </div>
+          </div>
+          <div class="portal__open-fields" id="openTimeFields" hidden>
+            <label>
+              Tijd
+              <input type="time" name="time" value="19:00" />
+            </label>
+          </div>
+          <button type="submit" class="btn btn--red">Openzetten voor klanten</button>
+        </form>
+        <div class="portal__override-list" id="overrideList"></div>
+      </div>
+
       <p class="portal__success" id="agendaSuccess" hidden></p>
       <div class="portal__list" id="agendaList"></div>
       <p class="portal__empty" id="agendaEmpty" hidden>Geen afspraken op deze dag.</p>
@@ -281,6 +422,14 @@
     const agendaError = document.getElementById("agendaError");
     const agendaSuccess = document.getElementById("agendaSuccess");
     const logoutBtn = document.getElementById("logoutBtn");
+    const openForm = document.getElementById("openForm");
+    const openModes = document.getElementById("openModes");
+    const openDayFields = document.getElementById("openDayFields");
+    const openTimeFields = document.getElementById("openTimeFields");
+    const openDate = document.getElementById("openDate");
+    const openBarber = document.getElementById("openBarber");
+    const overrideList = document.getElementById("overrideList");
+    let openMode = "day";
 
     function getToken() {
       return sessionStorage.getItem(TOKEN_KEY);
@@ -330,6 +479,22 @@
       agendaDateLabel.textContent = `${dayNamesFull[date.getDay()]} ${day} ${monthNames[date.getMonth()]} ${year}`;
     }
 
+    function syncOpenFormDate() {
+      const dateStr = getSelectedDate();
+      if (dateStr && openDate) {
+        openDate.value = dateStr;
+      }
+    }
+
+    function setOpenMode(mode) {
+      openMode = mode;
+      openModes.querySelectorAll(".portal__open-mode").forEach((btn) => {
+        btn.classList.toggle("is-active", btn.dataset.mode === mode);
+      });
+      openDayFields.hidden = mode !== "day";
+      openTimeFields.hidden = mode !== "time";
+    }
+
     function buildPortalDays(preferredDate) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -352,12 +517,15 @@
           btn.classList.add("is-active");
           selectedDate = dateStr;
           updateDateLabel(dateStr);
+          syncOpenFormDate();
           loadAgenda();
+          loadOverrides();
         });
         agendaDays.appendChild(btn);
       }
 
       updateDateLabel(selectedDate);
+      syncOpenFormDate();
       const activeBtn = agendaDays.querySelector(`[data-date="${selectedDate}"]`);
       if (activeBtn) {
         activeBtn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
@@ -413,6 +581,139 @@
         }
       }
     }
+
+    async function loadOverrides() {
+      if (!overrideList) return;
+      overrideList.innerHTML = "Laden…";
+
+      const date = openDate.value || getSelectedDate();
+      const barber = openBarber.value;
+      if (!date || !barber) {
+        overrideList.innerHTML = "";
+        return;
+      }
+
+      try {
+        const params = new URLSearchParams({ date, barber });
+        const res = await fetch(`/api/portal/overrides?${params}`, {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Kon openzettingen niet laden");
+
+        overrideList.innerHTML = "";
+        if (!data.overrides.length) {
+          overrideList.innerHTML = '<p class="portal__empty">Geen extra openzettingen op deze dag.</p>';
+          return;
+        }
+
+        data.overrides.forEach((item) => {
+          const el = document.createElement("div");
+          el.className = "portal__override-item";
+          el.innerHTML = `
+            <span>${item.barberName} · ${item.label}</span>
+            <button type="button" class="portal__override-remove">Verwijderen</button>
+          `;
+          el.querySelector(".portal__override-remove").addEventListener("click", () => {
+            removeOverride(item.id);
+          });
+          overrideList.appendChild(el);
+        });
+      } catch (error) {
+        overrideList.innerHTML = "";
+        overrideList.innerHTML = `<p class="portal__error">${error.message}</p>`;
+        if (error.message.includes("Niet ingelogd")) {
+          clearToken();
+          showLoggedOut();
+        }
+      }
+    }
+
+    async function removeOverride(id) {
+      if (!confirm("Deze openzetting verwijderen? Klanten kunnen dan niet meer op deze extra tijd/dag boeken.")) {
+        return;
+      }
+
+      agendaSuccess.hidden = true;
+      agendaError.hidden = true;
+
+      try {
+        const res = await fetch("/api/portal/overrides", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getToken()}`,
+          },
+          body: JSON.stringify({ action: "delete", id }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Verwijderen mislukt");
+
+        agendaSuccess.hidden = false;
+        agendaSuccess.textContent = data.message || "Openzetting verwijderd";
+        await loadOverrides();
+      } catch (error) {
+        agendaError.hidden = false;
+        agendaError.textContent = error.message;
+        if (error.message.includes("Niet ingelogd")) {
+          clearToken();
+          showLoggedOut();
+        }
+      }
+    }
+
+    openModes.addEventListener("click", (e) => {
+      const btn = e.target.closest(".portal__open-mode");
+      if (!btn) return;
+      setOpenMode(btn.dataset.mode);
+    });
+
+    openDate.addEventListener("change", loadOverrides);
+    openBarber.addEventListener("change", loadOverrides);
+
+    openForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      agendaSuccess.hidden = true;
+      agendaError.hidden = true;
+
+      const formData = new FormData(openForm);
+      const payload = {
+        barber: formData.get("barber"),
+        date: formData.get("date"),
+        kind: "open",
+      };
+
+      if (openMode === "time") {
+        payload.time = formData.get("time");
+      } else {
+        payload.openTime = formData.get("openTime");
+        payload.closeTime = formData.get("closeTime");
+      }
+
+      try {
+        const res = await fetch("/api/portal/overrides", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getToken()}`,
+          },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Openzetten mislukt");
+
+        agendaSuccess.hidden = false;
+        agendaSuccess.textContent = data.message || "Beschikbaarheid geopend voor klanten";
+        await loadOverrides();
+      } catch (error) {
+        agendaError.hidden = false;
+        agendaError.textContent = error.message;
+        if (error.message.includes("Niet ingelogd")) {
+          clearToken();
+          showLoggedOut();
+        }
+      }
+    });
 
     async function loadAgenda() {
       agendaError.hidden = true;
@@ -482,7 +783,9 @@
         setToken(data.token);
         showLoggedIn();
         setTodayOnDateInput();
+        openDate.min = formatDateString(new Date());
         await loadAgenda();
+        await loadOverrides();
       } catch (error) {
         loginError.hidden = false;
         loginError.textContent = error.message;
@@ -492,6 +795,7 @@
     agendaToday.addEventListener("click", () => {
       setTodayOnDateInput();
       loadAgenda();
+      loadOverrides();
     });
     logoutBtn.addEventListener("click", () => {
       clearToken();
@@ -501,7 +805,9 @@
     if (getToken()) {
       showLoggedIn();
       setTodayOnDateInput();
+      openDate.min = formatDateString(new Date());
       loadAgenda();
+      loadOverrides();
     } else {
       showLoggedOut();
     }

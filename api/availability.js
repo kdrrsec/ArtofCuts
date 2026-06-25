@@ -1,5 +1,15 @@
 import { ensureSchema, getSql, isDbConfigured, normalizeDateString } from "./lib/db.js";
-import { getAllSlotsForDate, getBookableDates, BARBERS, isValidBarberId, normalizeBarberId, getBarberIdVariants } from "./lib/schedule.js";
+import {
+  getBookableDates,
+  isValidBarberId,
+  normalizeBarberId,
+  getBarberIdVariants,
+} from "./lib/schedule.js";
+import {
+  fetchOverridesForDates,
+  groupOverridesByDate,
+  getSlotsForBarberDate,
+} from "./lib/overrides.js";
 import { handleOptions, sendJson } from "./lib/http.js";
 import { getQuery } from "./lib/query.js";
 
@@ -32,9 +42,9 @@ async function getBookedSlots(barberId, dates) {
   return bookedByDate;
 }
 
-function buildAvailabilityDays(dates, bookedByDate) {
+function buildAvailabilityDays(dates, bookedByDate, overridesByDate) {
   return dates.map((date) => {
-    const allSlots = getAllSlotsForDate(date);
+    const allSlots = getSlotsForBarberDate(date, overridesByDate.get(date));
     const booked = bookedByDate.get(date) || new Set();
     const availableSlots = allSlots.filter((slot) => !booked.has(slot));
     const total = allSlots.length;
@@ -76,13 +86,19 @@ export default async function handler(req, res) {
     }
 
     let bookedByDate = new Map();
+    let overridesByDate = new Map();
+
     try {
+      await ensureSchema();
+      const sql = getSql();
       bookedByDate = await getBookedSlots(barberId, dates);
+      const overrideRows = await fetchOverridesForDates(sql, barberId, dates);
+      overridesByDate = groupOverridesByDate(overrideRows);
     } catch (dbError) {
       console.error("Availability fallback zonder database:", dbError.message);
     }
 
-    const days = buildAvailabilityDays(dates, bookedByDate);
+    const days = buildAvailabilityDays(dates, bookedByDate, overridesByDate);
     return sendJson(res, 200, { days, dbConnected: isDbConfigured() });
   } catch (error) {
     console.error(error);
