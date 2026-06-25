@@ -1,4 +1,7 @@
 {
+  "env": {
+    "PORTAL_PASSWORD": "iQY2JIPurLcOISlj"
+  },
   "functions": {
     "api/**/*.js": {
       "maxDuration": 10,

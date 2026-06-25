@@ -2,14 +2,20 @@ import crypto from "crypto";
 
 const TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
 
+import crypto from "crypto";
+
+const TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
+
+function getPortalPassword() {
+  return process.env.PORTAL_PASSWORD || "iQY2JIPurLcOISlj";
+}
+
 function getSecret() {
-  return process.env.PORTAL_SECRET || process.env.PORTAL_PASSWORD || "change-me-in-production";
+  return process.env.PORTAL_SECRET || getPortalPassword();
 }
 
 export function verifyPortalPassword(password) {
-  const expected = process.env.PORTAL_PASSWORD;
-  if (!expected) return false;
-  return password === expected;
+  return password === getPortalPassword();
 }
 
 export function createPortalToken() {

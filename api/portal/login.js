@@ -9,10 +9,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    if (!process.env.PORTAL_PASSWORD) {
-      return sendJson(res, 503, { error: "Portaal is nog niet geconfigureerd" });
-    }
-
     const body = await readJsonBody(req);
     if (!verifyPortalPassword(body.password)) {
       return sendJson(res, 401, { error: "Onjuist wachtwoord" });
