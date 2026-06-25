@@ -3,16 +3,36 @@ import { neon } from "@neondatabase/serverless";
 let sqlClient;
 let schemaReady;
 
+const DATABASE_ENV_KEYS = [
+  "DATABASE_URL",
+  "POSTGRES_URL",
+  "POSTGRES_PRISMA_URL",
+  "POSTGRES_URL_NON_POOLING",
+  "NEON_DATABASE_URL",
+  "STORAGE_URL",
+  "DATABASE_URL_UNPOOLED",
+];
+
+export function getDatabaseUrl() {
+  for (const key of DATABASE_ENV_KEYS) {
+    const value = process.env[key];
+    if (value && value.startsWith("postgres")) return value;
+  }
+  return null;
+}
+
 export function isDbConfigured() {
-  const url = process.env.DATABASE_URL;
-  return Boolean(url && url.startsWith("postgres"));
+  return Boolean(getDatabaseUrl());
 }
 
 export function getSql() {
-  if (!isDbConfigured()) {
-    throw new Error("DATABASE_URL is niet geconfigureerd. Voeg een Neon Postgres database toe in Vercel.");
+  const databaseUrl = getDatabaseUrl();
+  if (!databaseUrl) {
+    throw new Error(
+      "Database niet gevonden. Zet DATABASE_URL in Vercel (Storage → Neon Postgres) en redeploy."
+    );
   }
-  if (!sqlClient) sqlClient = neon(process.env.DATABASE_URL);
+  if (!sqlClient) sqlClient = neon(databaseUrl);
   return sqlClient;
 }
 
