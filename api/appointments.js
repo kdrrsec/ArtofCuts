@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { ensureSchema, getSql } from "./lib/db.js";
-import { BARBERS, SERVICES, getAllSlotsForDate } from "./lib/schedule.js";
+import { BARBERS, SERVICES, getAllSlotsForDate, isValidBarberId, normalizeBarberId } from "./lib/schedule.js";
 import { handleOptions, readJsonBody, sendJson } from "./lib/http.js";
 
 function createId() {
@@ -21,7 +21,7 @@ export default async function handler(req, res) {
   try {
     const body = await readJsonBody(req);
     const {
-      barber,
+      barber: rawBarber,
       service,
       date,
       time,
@@ -31,9 +31,10 @@ export default async function handler(req, res) {
       phone,
     } = body;
 
-    if (!barber || !BARBERS[barber]) {
+    if (!rawBarber || !isValidBarberId(rawBarber)) {
       return sendJson(res, 400, { error: "Kies een geldige kapper" });
     }
+    const barber = normalizeBarberId(rawBarber);
     if (!service || !SERVICES[service]) {
       return sendJson(res, 400, { error: "Kies een geldige dienst" });
     }

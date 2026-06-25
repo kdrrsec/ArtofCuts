@@ -11,9 +11,33 @@ export const openingHours = {
 export const SLOT_MINUTES = 45;
 
 export const BARBERS = {
-  "barbier-1": "Bewar Z.",
-  "barbier-2": "Zennar Z.",
+  bewar: "Bewar Z.",
+  zennar: "Zennar Z.",
 };
+
+const LEGACY_BARBER_IDS = {
+  "barbier-1": "bewar",
+  "barbier-2": "zennar",
+};
+
+export function normalizeBarberId(id) {
+  if (!id) return id;
+  if (BARBERS[id]) return id;
+  return LEGACY_BARBER_IDS[id] || id;
+}
+
+export function isValidBarberId(id) {
+  return Boolean(BARBERS[normalizeBarberId(id)]);
+}
+
+export function getBarberIdVariants(id) {
+  const normalized = normalizeBarberId(id);
+  const variants = new Set([normalized]);
+  for (const [legacy, current] of Object.entries(LEGACY_BARBER_IDS)) {
+    if (current === normalized) variants.add(legacy);
+  }
+  return Array.from(variants);
+}
 
 export const SERVICES = {
   knippen: "Knippen",

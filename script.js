@@ -292,23 +292,12 @@ async function fetchAvailability() {
 
     availabilityByDate = new Map(data.days.map((day) => [day.date, day]));
     renderBookingDays(getSelectedDate());
-
-    if (!data.dbConnected && bookerError) {
-      bookerError.hidden = false;
-      bookerError.textContent =
-        "Tijden zijn zichtbaar, maar boeken werkt pas nadat de database op Vercel is ingesteld.";
-    }
+    hideBookingError();
   } catch (error) {
     console.warn("Availability fallback:", error);
     const localDays = buildLocalAvailability(bookableDates);
     availabilityByDate = new Map(localDays.map((day) => [day.date, day]));
     renderBookingDays(getSelectedDate());
-
-    if (bookerError) {
-      bookerError.hidden = false;
-      bookerError.textContent =
-        "Live boeken is nog niet actief (database ontbreekt). Je kunt wel tijden bekijken, maar bevestigen werkt pas na database-setup.";
-    }
   }
 }
 

@@ -1,5 +1,5 @@
 import { ensureSchema, getSql, isDbConfigured, normalizeDateString } from "./lib/db.js";
-import { getAllSlotsForDate, getBookableDates, BARBERS } from "./lib/schedule.js";
+import { getAllSlotsForDate, getBookableDates, BARBERS, isValidBarberId, normalizeBarberId, getBarberIdVariants } from "./lib/schedule.js";
 import { handleOptions, sendJson } from "./lib/http.js";
 import { getQuery } from "./lib/query.js";
 
@@ -8,11 +8,12 @@ async function getBookedSlots(barberId, dates) {
 
   await ensureSchema();
   const sql = getSql();
+  const barberVariants = getBarberIdVariants(barberId);
 
   const rows = await sql`
     SELECT appointment_date::text AS appointment_date, appointment_time
     FROM appointments
-    WHERE barber_id = ${barberId}
+    WHERE barber_id = ANY(${barberVariants})
       AND appointment_date >= ${dates[0]}
       AND appointment_date <= ${dates[dates.length - 1]}
       AND cancelled_at IS NULL
@@ -59,10 +60,10 @@ export default async function handler(req, res) {
 
   try {
     const query = getQuery(req);
-    const barberId = query.barber;
+    const barberId = normalizeBarberId(query.barber);
     const datesParam = query.dates;
 
-    if (!barberId || !BARBERS[barberId]) {
+    if (!barberId || !isValidBarberId(barberId)) {
       return sendJson(res, 400, { error: "Ongeldige kapper" });
     }
 
