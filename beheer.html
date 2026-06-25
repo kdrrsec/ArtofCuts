@@ -120,37 +120,55 @@
       cursor: pointer;
     }
     .portal__today:hover { background: rgba(204, 43, 43, 0.12); }
-    .portal__days-scroll {
+    .portal__days-nav {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 0.5rem;
       width: 100%;
       max-width: 100%;
       min-width: 0;
-      overflow-x: auto;
-      overflow-y: hidden;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior-x: contain;
-      padding-bottom: 0.5rem;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(204, 43, 43, 0.4) transparent;
     }
-    .portal__days-scroll::-webkit-scrollbar { height: 6px; }
-    .portal__days-scroll::-webkit-scrollbar-thumb {
-      background: rgba(204, 43, 43, 0.45);
+    .portal__days-arrow {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.4rem;
+      height: 2.4rem;
+      border: 1px solid var(--line-light);
       border-radius: 999px;
+      background: rgba(246, 241, 231, 0.05);
+      color: var(--cream);
+      font-size: 1.1rem;
+      line-height: 1;
+      cursor: pointer;
+      transition: border-color 0.25s var(--ease), background 0.25s var(--ease), color 0.25s var(--ease), opacity 0.25s var(--ease);
+    }
+    .portal__days-arrow:hover:not(:disabled) {
+      border-color: var(--red);
+      background: rgba(204, 43, 43, 0.12);
+      color: #fff;
+    }
+    .portal__days-arrow:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
     }
     .portal__days {
-      display: inline-flex;
-      gap: 0.65rem;
-      padding: 0.25rem 0 0;
-      vertical-align: top;
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 0.5rem;
+      min-width: 0;
     }
     .portal__days .day {
-      flex: 0 0 auto;
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
       gap: 0.15rem;
-      min-width: 80px;
-      padding: 0.9rem 0.55rem 1rem;
+      width: 100%;
+      min-width: 0;
+      padding: 0.75rem 0.25rem 0.85rem;
       border: 1px solid var(--line-light);
       border-radius: 16px;
       background: rgba(246, 241, 231, 0.05);
@@ -241,8 +259,11 @@
       .portal__toolbar { grid-template-columns: 1fr; }
       .portal__item { grid-template-columns: 1fr; }
       .portal__cancel { justify-self: start; width: 100%; padding: 0.75rem 1rem; }
-      .portal__days .day { min-width: 88px; padding: 1rem 0.6rem 1.1rem; }
-      .portal__days .day b { font-size: 1.75rem; }
+      .portal__days { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.35rem; }
+      .portal__days .day { padding: 0.65rem 0.15rem 0.75rem; }
+      .portal__days .day b { font-size: 1.35rem; }
+      .portal__days .day small { font-size: 0.62rem; }
+      .portal__days-arrow { width: 2rem; height: 2rem; font-size: 1rem; }
       .portal__barber { font-size: 1rem; padding: 0.85rem 1.25rem; }
       .portal__head-row { flex-direction: column; align-items: stretch; }
     }
@@ -282,8 +303,10 @@
             <span>Datum</span>
             <button type="button" class="portal__today" id="agendaToday">Vandaag</button>
           </div>
-          <div class="portal__days-scroll" id="agendaDaysScroll">
+          <div class="portal__days-nav">
+            <button type="button" class="portal__days-arrow" id="agendaDaysPrev" aria-label="Vorige dagen">←</button>
             <div class="portal__days" id="agendaDays"></div>
+            <button type="button" class="portal__days-arrow" id="agendaDaysNext" aria-label="Volgende dagen">→</button>
           </div>
           <p class="portal__selected-label" id="agendaDateLabel"></p>
         </div>
@@ -310,7 +333,8 @@
     const loginForm = document.getElementById("loginForm");
     const loginError = document.getElementById("loginError");
     const agendaDays = document.getElementById("agendaDays");
-    const agendaDaysScroll = document.getElementById("agendaDaysScroll");
+    const agendaDaysPrev = document.getElementById("agendaDaysPrev");
+    const agendaDaysNext = document.getElementById("agendaDaysNext");
     const agendaDateLabel = document.getElementById("agendaDateLabel");
     const agendaToday = document.getElementById("agendaToday");
     const agendaBarbers = document.getElementById("agendaBarbers");
@@ -345,7 +369,45 @@
     const dayNames = ["zo", "ma", "di", "wo", "do", "vr", "za"];
     const dayNamesFull = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
     const monthNames = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"];
+    const DAYS_PER_PAGE = 7;
+    const TOTAL_DAYS = 28;
     let selectedDate = null;
+    let dayWindowStart = 0;
+
+    function getToday() {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return today;
+    }
+
+    function getDateAtOffset(offset) {
+      const date = new Date(getToday());
+      date.setDate(date.getDate() + offset);
+      return date;
+    }
+
+    function getOffsetForDate(dateStr) {
+      const [year, month, day] = dateStr.split("-").map(Number);
+      const target = new Date(year, month - 1, day);
+      target.setHours(0, 0, 0, 0);
+      const today = getToday();
+      return Math.round((target - today) / (1000 * 60 * 60 * 24));
+    }
+
+    function getMaxWindowStart() {
+      return Math.max(0, TOTAL_DAYS - DAYS_PER_PAGE);
+    }
+
+    function syncDayWindowForDate(dateStr) {
+      const offset = Math.max(0, getOffsetForDate(dateStr));
+      dayWindowStart = Math.floor(offset / DAYS_PER_PAGE) * DAYS_PER_PAGE;
+      dayWindowStart = Math.min(dayWindowStart, getMaxWindowStart());
+    }
+
+    function updateDayNavButtons() {
+      agendaDaysPrev.disabled = dayWindowStart <= 0;
+      agendaDaysNext.disabled = dayWindowStart + DAYS_PER_PAGE >= TOTAL_DAYS;
+    }
 
     function formatDateString(date) {
       return [
@@ -366,16 +428,22 @@
       agendaDateLabel.textContent = `${dayNamesFull[date.getDay()]} ${day} ${monthNames[date.getMonth()]} ${year}`;
     }
 
-    function buildPortalDays(preferredDate) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayStr = formatDateString(today);
+    function buildPortalDays(preferredDate, options = {}) {
+      const { preserveWindow = false } = options;
+      const todayStr = formatDateString(getToday());
       selectedDate = preferredDate || getSelectedDate() || todayStr;
+      if (!preserveWindow) {
+        syncDayWindowForDate(selectedDate);
+      }
+      renderDayButtons();
+    }
 
+    function renderDayButtons() {
       agendaDays.innerHTML = "";
-      for (let offset = 0; offset < 21; offset++) {
-        const date = new Date(today);
-        date.setDate(today.getDate() + offset);
+      const end = Math.min(dayWindowStart + DAYS_PER_PAGE, TOTAL_DAYS);
+
+      for (let offset = dayWindowStart; offset < end; offset++) {
+        const date = getDateAtOffset(offset);
         const dateStr = formatDateString(date);
         const isClosed = date.getDay() === 0 || date.getDay() === 1;
         const btn = document.createElement("button");
@@ -393,20 +461,20 @@
         agendaDays.appendChild(btn);
       }
 
+      updateDayNavButtons();
       updateDateLabel(selectedDate);
-      const activeBtn = agendaDays.querySelector(`[data-date="${selectedDate}"]`);
-      if (activeBtn && agendaDaysScroll) {
-        const targetLeft = activeBtn.offsetLeft - (agendaDaysScroll.clientWidth - activeBtn.offsetWidth) / 2;
-        agendaDaysScroll.scrollTo({
-          left: Math.max(0, targetLeft),
-          behavior: "smooth",
-        });
-      }
+    }
+
+    function shiftDayWindow(direction) {
+      const nextStart = dayWindowStart + direction * DAYS_PER_PAGE;
+      if (nextStart < 0 || nextStart > getMaxWindowStart()) return;
+      dayWindowStart = nextStart;
+      renderDayButtons();
     }
 
     function setTodayOnDateInput() {
-      const today = new Date();
-      buildPortalDays(formatDateString(today));
+      dayWindowStart = 0;
+      buildPortalDays(formatDateString(getToday()));
     }
 
     function getSelectedBarber() {
@@ -533,6 +601,8 @@
       setTodayOnDateInput();
       loadAgenda();
     });
+    agendaDaysPrev.addEventListener("click", () => shiftDayWindow(-1));
+    agendaDaysNext.addEventListener("click", () => shiftDayWindow(1));
     logoutBtn.addEventListener("click", () => {
       clearToken();
       showLoggedOut();
