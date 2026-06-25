@@ -2,10 +2,6 @@ import crypto from "crypto";
 
 const TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
 
-import crypto from "crypto";
-
-const TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
-
 function getPortalPassword() {
   return process.env.PORTAL_PASSWORD || "iQY2JIPurLcOISlj";
 }
