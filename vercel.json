@@ -1,6 +1,6 @@
 {
   "env": {
-    "PORTAL_PASSWORD": "iQY2JIPurLcOISlj"
+    "PORTAL_PASSWORD": "Ronaldo7"
   },
   "functions": {
     "api/**/*.js": {
