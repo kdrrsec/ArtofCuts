@@ -26,10 +26,27 @@ window.addEventListener("scroll", onScroll, { passive: true });
 // Mobile menu
 const navToggle = document.getElementById("navToggle");
 const navLinks = document.getElementById("navLinks");
-navToggle.addEventListener("click", () => nav.classList.toggle("open"));
-navLinks.addEventListener("click", (e) => {
-  if (e.target.tagName === "A") nav.classList.remove("open");
+const navBackdrop = document.getElementById("navBackdrop");
+
+function setMenuOpen(open) {
+  nav.classList.toggle("open", open);
+  nav.classList.remove("nav--hidden");
+  document.body.classList.toggle("menu-open", open);
+  navToggle.setAttribute("aria-expanded", open ? "true" : "false");
+  if (navBackdrop) navBackdrop.setAttribute("aria-hidden", open ? "false" : "true");
+}
+
+navToggle.addEventListener("click", () => {
+  setMenuOpen(!nav.classList.contains("open"));
 });
+
+navLinks.addEventListener("click", (e) => {
+  if (e.target.tagName === "A") setMenuOpen(false);
+});
+
+if (navBackdrop) {
+  navBackdrop.addEventListener("click", () => setMenuOpen(false));
+}
 
 // Scroll-reveal animations
 const revealEls = document.querySelectorAll("[data-reveal]");
