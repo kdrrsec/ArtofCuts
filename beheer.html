@@ -23,7 +23,7 @@
       margin-bottom: 1.2rem;
     }
     .portal__login { display: grid; gap: 0.8rem; max-width: 360px; }
-    .portal__login input, .portal__toolbar select {
+    .portal__login input {
       width: 100%;
       border: 1px solid var(--line-light);
       background: rgba(246, 241, 231, 0.05);
@@ -32,6 +32,38 @@
       padding: 0.85rem 1rem;
       font: inherit;
       font-size: 1rem;
+    }
+    .portal__barber-section { grid-column: 1 / -1; }
+    .portal__barber-section > span {
+      display: block;
+      font-size: 0.82rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted-light);
+      margin-bottom: 0.65rem;
+    }
+    .portal__barbers {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+    }
+    .portal__barber {
+      font-family: var(--body);
+      font-size: 0.92rem;
+      font-weight: 500;
+      color: var(--cream);
+      background: rgba(246, 241, 231, 0.05);
+      border: 1px solid var(--line-light);
+      border-radius: 999px;
+      padding: 0.75rem 1.15rem;
+      cursor: pointer;
+      transition: background 0.25s var(--ease), border-color 0.25s var(--ease), color 0.25s var(--ease), transform 0.2s var(--ease);
+    }
+    .portal__barber:hover { border-color: var(--red); transform: translateY(-1px); }
+    .portal__barber.is-active {
+      background: var(--red);
+      border-color: var(--red);
+      color: #fff;
     }
     .portal__date-section { grid-column: 1 / -1; }
     .portal__date-head {
@@ -119,6 +151,11 @@
       margin-bottom: 1rem;
     }
     .portal__toolbar label { display: grid; gap: 0.35rem; font-size: 0.8rem; color: var(--muted-light); }
+    .portal__toolbar .btn--line {
+      justify-self: end;
+      align-self: start;
+      margin-top: 1.6rem;
+    }
     .portal__list { display: grid; gap: 0.75rem; }
     .portal__item {
       display: grid;
@@ -170,7 +207,7 @@
       .portal__cancel { justify-self: start; width: 100%; padding: 0.75rem 1rem; }
       .portal__days .day { min-width: 88px; padding: 1rem 0.6rem 1.1rem; }
       .portal__days .day b { font-size: 1.75rem; }
-      .portal__toolbar select { font-size: 1.05rem; padding: 1rem; }
+      .portal__barber { font-size: 1rem; padding: 0.85rem 1.25rem; }
     }
   </style>
 </head>
@@ -204,14 +241,14 @@
           <div class="portal__days" id="agendaDays"></div>
           <p class="portal__selected-label" id="agendaDateLabel"></p>
         </div>
-        <label>
-          Kapper
-          <select id="agendaBarber">
-            <option value="">Alle kappers</option>
-            <option value="bewar">Bewar Z.</option>
-            <option value="zennar">Zennar Z.</option>
-          </select>
-        </label>
+        <div class="portal__barber-section">
+          <span>Kapper</span>
+          <div class="portal__barbers" id="agendaBarbers">
+            <button type="button" class="portal__barber is-active" data-barber="">Alle kappers</button>
+            <button type="button" class="portal__barber" data-barber="bewar">Bewar Z.</button>
+            <button type="button" class="portal__barber" data-barber="zennar">Zennar Z.</button>
+          </div>
+        </div>
         <button type="button" class="btn btn--line" id="logoutBtn">Uitloggen</button>
       </div>
       <p class="portal__success" id="agendaSuccess" hidden></p>
@@ -230,7 +267,7 @@
     const agendaDays = document.getElementById("agendaDays");
     const agendaDateLabel = document.getElementById("agendaDateLabel");
     const agendaToday = document.getElementById("agendaToday");
-    const agendaBarber = document.getElementById("agendaBarber");
+    const agendaBarbers = document.getElementById("agendaBarbers");
     const agendaList = document.getElementById("agendaList");
     const agendaEmpty = document.getElementById("agendaEmpty");
     const agendaError = document.getElementById("agendaError");
@@ -322,6 +359,18 @@
       buildPortalDays(formatDateString(today));
     }
 
+    function getSelectedBarber() {
+      return agendaBarbers.querySelector(".portal__barber.is-active")?.dataset.barber ?? "";
+    }
+
+    agendaBarbers.addEventListener("click", (e) => {
+      const btn = e.target.closest(".portal__barber");
+      if (!btn) return;
+      agendaBarbers.querySelectorAll(".portal__barber").forEach((b) => b.classList.remove("is-active"));
+      btn.classList.add("is-active");
+      loadAgenda();
+    });
+
     async function cancelAppointment(id, name, time) {
       if (!confirm(`Afspraak annuleren?\n\n${name} om ${time}\n\nHet tijdslot wordt weer vrij voor anderen.`)) {
         return;
@@ -361,7 +410,8 @@
       agendaList.innerHTML = "Laden…";
 
       const params = new URLSearchParams({ date: getSelectedDate() });
-      if (agendaBarber.value) params.set("barber", agendaBarber.value);
+      const barber = getSelectedBarber();
+      if (barber) params.set("barber", barber);
 
       try {
         const res = await fetch(`/api/portal/appointments?${params}`, {
@@ -433,7 +483,6 @@
       setTodayOnDateInput();
       loadAgenda();
     });
-    agendaBarber.addEventListener("change", loadAgenda);
     logoutBtn.addEventListener("click", () => {
       clearToken();
       showLoggedOut();
