@@ -147,7 +147,7 @@ function formatDateString(date) {
   ].join("-");
 }
 
-function getLocalBookableDates(count = 8) {
+function getLocalBookableDates(count = 14) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const dates = [];

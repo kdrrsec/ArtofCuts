@@ -96,7 +96,7 @@ export function isDateOpen(dateStr) {
   return getAllSlotsForDate(dateStr).length > 0;
 }
 
-export function getBookableDates(count = 8, maxLookahead = 42) {
+export function getBookableDates(count = 14, maxLookahead = 56) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const dates = [];
