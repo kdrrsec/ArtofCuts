@@ -76,6 +76,7 @@
 
   <!-- NAV -->
   <header class="nav" id="nav">
+    <button type="button" class="nav__backdrop" id="navBackdrop" aria-hidden="true" tabindex="-1"></button>
     <div class="nav__inner">
       <a href="#home" class="nav__logo">
         <span class="logo__icon" style="--icon: url('images/razor.png')" role="img" aria-label="Scheermes"></span>
@@ -93,7 +94,7 @@
 
       <div class="nav__right">
         <a href="#afspraak" class="btn btn--red">Maak afspraak</a>
-        <button class="nav__toggle" id="navToggle" aria-label="Menu">
+        <button class="nav__toggle" id="navToggle" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
           <span></span><span></span><span></span>
         </button>
       </div>
