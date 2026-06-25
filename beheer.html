@@ -10,8 +10,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@0,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <style>
-    body { background: var(--ink); color: var(--cream); min-height: 100vh; }
-    .portal { max-width: 920px; margin: 0 auto; padding: 3rem 1.5rem 4rem; min-width: 0; }
+    [hidden] { display: none !important; }
+    body { background: var(--ink); color: var(--cream); min-height: 100vh; overflow-x: hidden; }
+    .portal { max-width: 920px; width: 100%; margin: 0 auto; padding: 3rem 1.5rem 4rem; min-width: 0; }
     .portal__head { margin-bottom: 2rem; }
     .portal__head-row {
       display: flex;
@@ -21,7 +22,11 @@
     }
     .portal__logout {
       flex-shrink: 0;
-      margin-top: 0.35rem;
+    }
+    .portal__card-top {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 1rem;
     }
     .portal__head h1 { font-family: var(--serif); font-size: clamp(2rem, 4vw, 2.8rem); margin: 0.4rem 0 0.6rem; }
     .portal__head p { color: var(--muted-light); }
@@ -31,8 +36,10 @@
       border-radius: 18px;
       padding: 1.5rem;
       margin-bottom: 1.2rem;
+      width: 100%;
       max-width: 100%;
       overflow: hidden;
+      box-sizing: border-box;
     }
     .portal__login { display: grid; gap: 0.8rem; max-width: 360px; }
     .portal__login input {
@@ -113,29 +120,28 @@
       cursor: pointer;
     }
     .portal__today:hover { background: rgba(204, 43, 43, 0.12); }
-    .portal__days-wrap {
-      min-width: 0;
-      max-width: 100%;
-      overflow: hidden;
-    }
-    .portal__days {
-      display: flex;
-      gap: 0.65rem;
+    .portal__days-scroll {
       width: 100%;
       max-width: 100%;
       min-width: 0;
       overflow-x: auto;
       overflow-y: hidden;
-      padding: 0.25rem 0 0.5rem;
       -webkit-overflow-scrolling: touch;
       overscroll-behavior-x: contain;
-      scrollbar-color: rgba(204, 43, 43, 0.4) transparent;
+      padding-bottom: 0.5rem;
       scrollbar-width: thin;
+      scrollbar-color: rgba(204, 43, 43, 0.4) transparent;
     }
-    .portal__days::-webkit-scrollbar { height: 6px; }
-    .portal__days::-webkit-scrollbar-thumb {
+    .portal__days-scroll::-webkit-scrollbar { height: 6px; }
+    .portal__days-scroll::-webkit-scrollbar-thumb {
       background: rgba(204, 43, 43, 0.45);
       border-radius: 999px;
+    }
+    .portal__days {
+      display: inline-flex;
+      gap: 0.65rem;
+      padding: 0.25rem 0 0;
+      vertical-align: top;
     }
     .portal__days .day {
       flex: 0 0 auto;
@@ -239,7 +245,6 @@
       .portal__days .day b { font-size: 1.75rem; }
       .portal__barber { font-size: 1rem; padding: 0.85rem 1.25rem; }
       .portal__head-row { flex-direction: column; align-items: stretch; }
-      .portal__logout { width: 100%; margin-top: 0; }
     }
   </style>
 </head>
@@ -253,7 +258,6 @@
           <h1>Afspraken agenda</h1>
           <p>Bekijk wie er vandaag en op andere dagen gepland staat.</p>
         </div>
-        <button type="button" class="btn btn--red portal__logout" id="logoutBtn" hidden>Uitloggen</button>
       </div>
     </div>
 
@@ -269,13 +273,16 @@
     </section>
 
     <section class="portal__card" id="agendaCard" hidden>
+      <div class="portal__card-top">
+        <button type="button" class="btn btn--red portal__logout" id="logoutBtn">Uitloggen</button>
+      </div>
       <div class="portal__toolbar">
         <div class="portal__date-section">
           <div class="portal__date-head">
             <span>Datum</span>
             <button type="button" class="portal__today" id="agendaToday">Vandaag</button>
           </div>
-          <div class="portal__days-wrap">
+          <div class="portal__days-scroll" id="agendaDaysScroll">
             <div class="portal__days" id="agendaDays"></div>
           </div>
           <p class="portal__selected-label" id="agendaDateLabel"></p>
@@ -303,6 +310,7 @@
     const loginForm = document.getElementById("loginForm");
     const loginError = document.getElementById("loginError");
     const agendaDays = document.getElementById("agendaDays");
+    const agendaDaysScroll = document.getElementById("agendaDaysScroll");
     const agendaDateLabel = document.getElementById("agendaDateLabel");
     const agendaToday = document.getElementById("agendaToday");
     const agendaBarbers = document.getElementById("agendaBarbers");
@@ -327,13 +335,11 @@
     function showLoggedIn() {
       loginCard.hidden = true;
       agendaCard.hidden = false;
-      logoutBtn.hidden = false;
     }
 
     function showLoggedOut() {
       loginCard.hidden = false;
       agendaCard.hidden = true;
-      logoutBtn.hidden = true;
     }
 
     const dayNames = ["zo", "ma", "di", "wo", "do", "vr", "za"];
@@ -389,8 +395,12 @@
 
       updateDateLabel(selectedDate);
       const activeBtn = agendaDays.querySelector(`[data-date="${selectedDate}"]`);
-      if (activeBtn) {
-        activeBtn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+      if (activeBtn && agendaDaysScroll) {
+        const targetLeft = activeBtn.offsetLeft - (agendaDaysScroll.clientWidth - activeBtn.offsetWidth) / 2;
+        agendaDaysScroll.scrollTo({
+          left: Math.max(0, targetLeft),
+          behavior: "smooth",
+        });
       }
     }
 
