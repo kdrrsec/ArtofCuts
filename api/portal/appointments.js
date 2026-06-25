@@ -1,5 +1,5 @@
 import { ensureSchema, getSql } from "../lib/db.js";
-import { BARBERS, SERVICES, isValidBarberId, normalizeBarberId } from "../lib/schedule.js";
+import { BARBERS, SERVICES, isValidBarberId, normalizeBarberId, getBarberIdVariants } from "../lib/schedule.js";
 import { getBearerToken, verifyPortalToken } from "../lib/auth.js";
 import { handleOptions, sendJson } from "../lib/http.js";
 import { getQuery } from "../lib/query.js";

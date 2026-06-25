@@ -43,12 +43,13 @@
     .portal__list { display: grid; gap: 0.75rem; }
     .portal__item {
       display: grid;
-      grid-template-columns: 72px 1fr;
+      grid-template-columns: 72px 1fr auto;
       gap: 1rem;
       padding: 1rem;
       border-radius: 14px;
       border: 1px solid var(--line-light);
       background: rgba(246, 241, 231, 0.03);
+      align-items: center;
     }
     .portal__time {
       font-family: var(--serif);
@@ -58,12 +59,35 @@
     }
     .portal__item h3 { font-family: var(--serif); font-size: 1.2rem; margin-bottom: 0.2rem; }
     .portal__meta { color: var(--muted-light); font-size: 0.86rem; }
+    .portal__cancel {
+      font-family: var(--body);
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--red);
+      background: transparent;
+      border: 1px solid rgba(204, 43, 43, 0.45);
+      border-radius: 999px;
+      padding: 0.55rem 0.9rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.25s var(--ease), color 0.25s var(--ease);
+    }
+    .portal__cancel:hover { background: var(--red); color: #fff; }
+    .portal__cancel:disabled { opacity: 0.5; cursor: not-allowed; }
+    .portal__success {
+      color: #7dcea0;
+      font-size: 0.88rem;
+      margin-bottom: 0.75rem;
+    }
     .portal__empty, .portal__error { color: var(--muted-light); font-size: 0.92rem; }
     .portal__error { color: #ff8f8f; }
     .portal__back { color: var(--muted-light); font-size: 0.85rem; }
     @media (max-width: 700px) {
       .portal__toolbar { grid-template-columns: 1fr; }
       .portal__item { grid-template-columns: 1fr; }
+      .portal__cancel { justify-self: start; }
     }
   </style>
 </head>
@@ -103,6 +127,7 @@
         </label>
         <button type="button" class="btn btn--line" id="logoutBtn">Uitloggen</button>
       </div>
+      <p class="portal__success" id="agendaSuccess" hidden></p>
       <div class="portal__list" id="agendaList"></div>
       <p class="portal__empty" id="agendaEmpty" hidden>Geen afspraken op deze dag.</p>
       <p class="portal__error" id="agendaError" hidden></p>
@@ -120,6 +145,7 @@
     const agendaList = document.getElementById("agendaList");
     const agendaEmpty = document.getElementById("agendaEmpty");
     const agendaError = document.getElementById("agendaError");
+    const agendaSuccess = document.getElementById("agendaSuccess");
     const logoutBtn = document.getElementById("logoutBtn");
 
     function getToken() {
@@ -153,6 +179,39 @@
       ].join("-");
     }
 
+    async function cancelAppointment(id, name, time) {
+      if (!confirm(`Afspraak annuleren?\n\n${name} om ${time}\n\nHet tijdslot wordt weer vrij voor anderen.`)) {
+        return;
+      }
+
+      agendaSuccess.hidden = true;
+      agendaError.hidden = true;
+
+      try {
+        const res = await fetch("/api/portal/cancel", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getToken()}`,
+          },
+          body: JSON.stringify({ id }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Annuleren mislukt");
+
+        agendaSuccess.hidden = false;
+        agendaSuccess.textContent = data.message || "Afspraak geannuleerd";
+        await loadAgenda();
+      } catch (error) {
+        agendaError.hidden = false;
+        agendaError.textContent = error.message;
+        if (error.message.includes("Niet ingelogd")) {
+          clearToken();
+          showLoggedOut();
+        }
+      }
+    }
+
     async function loadAgenda() {
       agendaError.hidden = true;
       agendaEmpty.hidden = true;
@@ -177,14 +236,19 @@
         data.appointments.forEach((item) => {
           const el = document.createElement("article");
           el.className = "portal__item";
+          const name = `${item.firstName} ${item.lastName}`;
           el.innerHTML = `
             <div class="portal__time">${item.time}</div>
             <div>
-              <h3>${item.firstName} ${item.lastName}</h3>
+              <h3>${name}</h3>
               <p class="portal__meta">${item.serviceName} · ${item.barberName}</p>
               <p class="portal__meta">${item.phone || "Geen telefoon"}${item.email ? ` · ${item.email}` : ""}</p>
             </div>
+            <button type="button" class="portal__cancel">Annuleren</button>
           `;
+          el.querySelector(".portal__cancel").addEventListener("click", () => {
+            cancelAppointment(item.id, name, item.time);
+          });
           agendaList.appendChild(el);
         });
       } catch (error) {
