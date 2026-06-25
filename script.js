@@ -27,13 +27,33 @@ window.addEventListener("scroll", onScroll, { passive: true });
 const navToggle = document.getElementById("navToggle");
 const navLinks = document.getElementById("navLinks");
 const navBackdrop = document.getElementById("navBackdrop");
+const navMenu = document.getElementById("navMenu");
+let scrollLockY = 0;
 
 function setMenuOpen(open) {
   nav.classList.toggle("open", open);
   nav.classList.remove("nav--hidden");
-  document.body.classList.toggle("menu-open", open);
+  navMenu.classList.toggle("is-open", open);
+  navMenu.setAttribute("aria-hidden", open ? "false" : "true");
   navToggle.setAttribute("aria-expanded", open ? "true" : "false");
   if (navBackdrop) navBackdrop.setAttribute("aria-hidden", open ? "false" : "true");
+  document.body.classList.toggle("menu-open", open);
+
+  if (open) {
+    scrollLockY = window.scrollY;
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollLockY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
+  } else {
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+    window.scrollTo(0, scrollLockY);
+  }
 }
 
 navToggle.addEventListener("click", () => {
