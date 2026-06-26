@@ -60,6 +60,18 @@ export async function ensureSchema() {
     ON appointments (barber_id, appointment_date, appointment_time)
     WHERE cancelled_at IS NULL
   `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS schedule_overrides (
+      override_date DATE PRIMARY KEY,
+      is_closed BOOLEAN NOT NULL DEFAULT FALSE,
+      open_time TEXT,
+      close_time TEXT,
+      added_slots TEXT[] NOT NULL DEFAULT '{}',
+      blocked_slots TEXT[] NOT NULL DEFAULT '{}',
+      note TEXT,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
   schemaReady = true;
 }
 

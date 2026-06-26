@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { ensureSchema, getSql } from "./lib/db.js";
 import { BARBERS, SERVICES, getAllSlotsForDate, isValidBarberId, normalizeBarberId } from "./lib/schedule.js";
+import { getOverrideForDate } from "./lib/overrides.js";
 import { handleOptions, readJsonBody, sendJson } from "./lib/http.js";
 
 function createId() {
@@ -48,7 +49,8 @@ export default async function handler(req, res) {
       return sendJson(res, 400, { error: "Voornaam en achternaam zijn verplicht" });
     }
 
-    const allowedSlots = getAllSlotsForDate(date);
+    const override = await getOverrideForDate(date);
+    const allowedSlots = getAllSlotsForDate(date, override);
     if (!allowedSlots.includes(time)) {
       return sendJson(res, 400, { error: "Deze tijd is niet beschikbaar" });
     }

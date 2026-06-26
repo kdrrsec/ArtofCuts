@@ -50,6 +50,13 @@ function toMinutes([hours, minutes]) {
   return hours * 60 + minutes;
 }
 
+function parseClockTime(value) {
+  if (!value || !/^\d{2}:\d{2}$/.test(value)) return null;
+  const [hours, minutes] = value.split(":").map(Number);
+  if (hours > 23 || minutes > 59) return null;
+  return [hours, minutes];
+}
+
 function formatTime(totalMinutes) {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
@@ -69,9 +76,19 @@ function isSameDay(a, b) {
   );
 }
 
-export function getAllSlotsForDate(dateInput) {
-  const date = typeof dateInput === "string" ? parseDateString(dateInput) : dateInput;
-  const hours = openingHours[date.getDay()];
+function getHoursForDate(date, override = null) {
+  if (override?.isClosed) return null;
+
+  const customOpen = parseClockTime(override?.openTime);
+  const customClose = parseClockTime(override?.closeTime);
+  if (customOpen && customClose) {
+    return { open: customOpen, close: customClose };
+  }
+
+  return openingHours[date.getDay()] || null;
+}
+
+function generateSlotsFromHours(hours, date) {
   if (!hours) return [];
 
   const start = toMinutes(hours.open);
@@ -92,20 +109,47 @@ export function getAllSlotsForDate(dateInput) {
   return slots;
 }
 
-export function isDateOpen(dateStr) {
-  return getAllSlotsForDate(dateStr).length > 0;
+export function getAllSlotsForDate(dateInput, override = null) {
+  const date = typeof dateInput === "string" ? parseDateString(dateInput) : dateInput;
+  const hours = getHoursForDate(date, override);
+  let slots = generateSlotsFromHours(hours, date);
+
+  const added = Array.isArray(override?.addedSlots) ? override.addedSlots : [];
+  const blocked = new Set(Array.isArray(override?.blockedSlots) ? override.blockedSlots : []);
+  const now = new Date();
+  const isToday = isSameDay(date, now);
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  for (const slot of added) {
+    if (!/^\d{2}:\d{2}$/.test(slot) || slots.includes(slot) || blocked.has(slot)) continue;
+    if (isToday) {
+      const [hours, minutes] = slot.split(":").map(Number);
+      if (hours * 60 + minutes <= nowMinutes) continue;
+    }
+    slots.push(slot);
+  }
+
+  slots = slots.filter((slot) => !blocked.has(slot));
+  slots.sort();
+  return slots;
 }
 
-export function getBookableDates(count = 14, maxLookahead = 56) {
+export function isDateOpen(dateStr, override = null) {
+  return getAllSlotsForDate(dateStr, override).length > 0;
+}
+
+export function getBookableDates(count = 14, maxLookahead = 56, overridesMap = new Map()) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const dates = [];
 
-  for (let offset = 0; dates.length < count && offset < maxLookahead; offset++) {
+  for (let offset = 0; offset < maxLookahead; offset++) {
     const date = new Date(today);
     date.setDate(today.getDate() + offset);
     const dateStr = formatDate(date);
-    if (isDateOpen(dateStr)) dates.push(dateStr);
+    const override = overridesMap.get(dateStr) || null;
+    if (isDateOpen(dateStr, override)) dates.push(dateStr);
+    if (dates.length >= count) break;
   }
 
   return dates;
@@ -117,4 +161,8 @@ export function formatDate(date) {
     String(date.getMonth() + 1).padStart(2, "0"),
     String(date.getDate()).padStart(2, "0"),
   ].join("-");
+}
+
+export function isValidClockTime(value) {
+  return Boolean(parseClockTime(value));
 }

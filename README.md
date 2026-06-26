@@ -49,6 +49,7 @@ Het boekingssysteem draait op Vercel Functions + Neon Postgres.
 - Open `/kapper/agenda` (niet publiek gelinkt; `/beheer.html` geeft 404)
 - Inloggen met `PORTAL_PASSWORD`
 - Agenda per dag en per kapper inzien
+- **Extra opening**: dagen sluiten, eigen uren instellen, tijdslots toevoegen of blokkeren
 
 ### Setup op Vercel
 1. Voeg **Neon Postgres** toe via Vercel Storage

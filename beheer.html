@@ -257,6 +257,148 @@
     .portal__empty, .portal__error { color: var(--muted-light); font-size: 0.92rem; }
     .portal__error { color: #ff8f8f; }
     .portal__back { color: var(--muted-light); font-size: 0.85rem; }
+    .portal__extra-section {
+      grid-column: 1 / -1;
+      min-width: 0;
+      padding-top: 0.25rem;
+      border-top: 1px solid var(--line-light);
+    }
+    .portal__extra-section > span {
+      display: block;
+      font-size: 0.82rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted-light);
+      margin-bottom: 0.45rem;
+    }
+    .portal__extra-hint {
+      color: var(--muted-light);
+      font-size: 0.86rem;
+      margin-bottom: 0.9rem;
+    }
+    .portal__extra-form {
+      display: grid;
+      gap: 0.9rem;
+    }
+    .portal__extra-check {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+    .portal__extra-check input {
+      width: 1.05rem;
+      height: 1.05rem;
+      accent-color: var(--red);
+    }
+    .portal__extra-hours,
+    .portal__extra-slots {
+      display: grid;
+      gap: 0.55rem;
+    }
+    .portal__extra-hours > span,
+    .portal__extra-slots > span {
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted-light);
+    }
+    .portal__extra-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.55rem;
+    }
+    .portal__extra-form input[type="time"],
+    .portal__extra-form input[type="text"] {
+      border: 1px solid var(--line-light);
+      background: rgba(246, 241, 231, 0.05);
+      color: var(--cream);
+      border-radius: 12px;
+      padding: 0.7rem 0.85rem;
+      font: inherit;
+      font-size: 0.95rem;
+    }
+    .portal__extra-form input[type="time"] { min-width: 8.5rem; }
+    .portal__extra-form input[type="text"] { width: 100%; }
+    .portal__extra-btn {
+      font-family: var(--body);
+      font-size: 0.82rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--cream);
+      background: rgba(246, 241, 231, 0.08);
+      border: 1px solid var(--line-light);
+      border-radius: 999px;
+      padding: 0.65rem 1rem;
+      cursor: pointer;
+    }
+    .portal__extra-btn:hover { border-color: var(--red); }
+    .portal__extra-list {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .portal__extra-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.45rem 0.7rem;
+      border-radius: 999px;
+      border: 1px solid var(--line-light);
+      background: rgba(246, 241, 231, 0.05);
+      font-size: 0.85rem;
+    }
+    .portal__extra-chip.is-add { border-color: rgba(125, 206, 160, 0.45); color: #9be6b4; }
+    .portal__extra-chip.is-block { border-color: rgba(255, 143, 143, 0.45); color: #ffafaf; }
+    .portal__extra-chip button {
+      border: none;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      padding: 0;
+    }
+    .portal__extra-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      align-items: center;
+    }
+    .portal__extra-reset {
+      font-family: var(--body);
+      font-size: 0.82rem;
+      color: var(--muted-light);
+      background: transparent;
+      border: none;
+      text-decoration: underline;
+      cursor: pointer;
+      padding: 0.35rem 0;
+    }
+    .portal__extra-status {
+      font-size: 0.86rem;
+      color: #7dcea0;
+    }
+    .portal__extra-form.is-disabled .portal__extra-hours,
+    .portal__extra-form.is-disabled .portal__extra-slots {
+      opacity: 0.45;
+      pointer-events: none;
+    }
+    .portal__days .day.is-extra::after {
+      content: "";
+      width: 5px;
+      height: 5px;
+      border-radius: 999px;
+      background: #7dcea0;
+      margin-top: 0.15rem;
+    }
+    .portal__days .day.is-extra.is-closed::after {
+      background: #ff8f8f;
+    }
     @media (max-width: 700px) {
       .portal { padding: 2rem 1rem 3rem; }
       .portal__toolbar { grid-template-columns: 1fr; }
@@ -333,6 +475,48 @@
             <button type="button" class="portal__barber" data-barber="zennar">Zennar Z.</button>
           </div>
         </div>
+        <div class="portal__extra-section">
+          <span>Extra opening</span>
+          <p class="portal__extra-hint">Open een extra dag, sluit een dag, of pas tijdslots aan voor klant-boekingen.</p>
+          <form class="portal__extra-form" id="extraForm">
+            <label class="portal__extra-check">
+              <input type="checkbox" id="extraClosed" />
+              <span>Dag sluiten (geen online afspraken)</span>
+            </label>
+            <div class="portal__extra-hours" id="extraHoursWrap">
+              <span>Eigen openingstijden op deze dag</span>
+              <div class="portal__extra-row">
+                <input type="time" id="extraOpen" value="10:00" />
+                <span>tot</span>
+                <input type="time" id="extraClose" value="18:00" />
+              </div>
+            </div>
+            <div class="portal__extra-slots">
+              <span>Extra tijdslot toevoegen</span>
+              <div class="portal__extra-row">
+                <input type="time" id="extraAddSlot" />
+                <button type="button" class="portal__extra-btn" id="extraAddBtn">Toevoegen</button>
+              </div>
+            </div>
+            <div class="portal__extra-slots">
+              <span>Tijdslot blokkeren</span>
+              <div class="portal__extra-row">
+                <input type="time" id="extraBlockSlot" />
+                <button type="button" class="portal__extra-btn" id="extraBlockBtn">Blokkeren</button>
+              </div>
+            </div>
+            <ul class="portal__extra-list" id="extraSlotList"></ul>
+            <label>
+              Notitie (optioneel)
+              <input type="text" id="extraNote" placeholder="Bijv. vakantie of extra avond" />
+            </label>
+            <div class="portal__extra-actions">
+              <button type="submit" class="btn btn--red">Opslaan</button>
+              <button type="button" class="portal__extra-reset" id="extraResetBtn">Terug naar standaard</button>
+            </div>
+            <p class="portal__extra-status" id="extraStatus" hidden></p>
+          </form>
+        </div>
       </div>
       <p class="portal__success" id="agendaSuccess" hidden></p>
       <div class="portal__list" id="agendaList"></div>
@@ -358,6 +542,18 @@
     const agendaError = document.getElementById("agendaError");
     const agendaSuccess = document.getElementById("agendaSuccess");
     const logoutBtn = document.getElementById("logoutBtn");
+    const extraForm = document.getElementById("extraForm");
+    const extraClosed = document.getElementById("extraClosed");
+    const extraOpen = document.getElementById("extraOpen");
+    const extraClose = document.getElementById("extraClose");
+    const extraAddSlot = document.getElementById("extraAddSlot");
+    const extraBlockSlot = document.getElementById("extraBlockSlot");
+    const extraAddBtn = document.getElementById("extraAddBtn");
+    const extraBlockBtn = document.getElementById("extraBlockBtn");
+    const extraSlotList = document.getElementById("extraSlotList");
+    const extraNote = document.getElementById("extraNote");
+    const extraResetBtn = document.getElementById("extraResetBtn");
+    const extraStatus = document.getElementById("extraStatus");
 
     function getToken() {
       return sessionStorage.getItem(TOKEN_KEY);
@@ -387,6 +583,13 @@
     const TOTAL_DAYS = 28;
     let selectedDate = null;
     let dayWindowStart = 0;
+    let overridesCache = new Map();
+    let editAddedSlots = [];
+    let editBlockedSlots = [];
+
+    function isWeekdayClosed(date) {
+      return date.getDay() === 0 || date.getDay() === 1;
+    }
 
     function getDaysPerPage() {
       return window.matchMedia("(max-width: 700px)").matches ? 5 : 7;
@@ -455,7 +658,35 @@
       if (!preserveWindow) {
         syncDayWindowForDate(selectedDate);
       }
-      renderDayButtons();
+      loadVisibleOverrides().then(() => {
+        renderDayButtons();
+        loadExtraPanel(selectedDate);
+      });
+    }
+
+    async function loadVisibleOverrides() {
+      const daysPerPage = getDaysPerPage();
+      const dates = [];
+      const end = Math.min(dayWindowStart + daysPerPage, TOTAL_DAYS);
+      for (let offset = dayWindowStart; offset < end; offset++) {
+        dates.push(formatDateString(getDateAtOffset(offset)));
+      }
+      if (!dates.length) return;
+
+      try {
+        const res = await fetch(`/api/portal/overrides?dates=${dates.join(",")}`, {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Kon extra openingen niet laden");
+        dates.forEach((date, index) => {
+          const override = data.overrides[index];
+          if (override) overridesCache.set(date, override);
+          else overridesCache.delete(date);
+        });
+      } catch (error) {
+        console.error(error);
+      }
     }
 
     function renderDayButtons() {
@@ -467,10 +698,17 @@
       for (let offset = dayWindowStart; offset < end; offset++) {
         const date = getDateAtOffset(offset);
         const dateStr = formatDateString(date);
-        const isClosed = date.getDay() === 0 || date.getDay() === 1;
+        const override = overridesCache.get(dateStr) || null;
+        const closed = override?.isClosed || (!override && isWeekdayClosed(date));
+        const hasExtra = Boolean(
+          override && (override.isClosed || override.openTime || override.addedSlots?.length || override.blockedSlots?.length)
+        );
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "day" + (dateStr === selectedDate ? " is-active" : "") + (isClosed ? " is-closed" : "");
+        btn.className = "day"
+          + (dateStr === selectedDate ? " is-active" : "")
+          + (closed ? " is-closed" : "")
+          + (hasExtra ? " is-extra" : "");
         btn.dataset.date = dateStr;
         btn.innerHTML = `<small>${dayNames[date.getDay()]}</small><b>${date.getDate()}</b>`;
         btn.addEventListener("click", () => {
@@ -478,6 +716,7 @@
           btn.classList.add("is-active");
           selectedDate = dateStr;
           updateDateLabel(dateStr);
+          loadExtraPanel(dateStr);
           loadAgenda();
         });
         agendaDays.appendChild(btn);
@@ -487,12 +726,141 @@
       updateDateLabel(selectedDate);
     }
 
+    function updateExtraFormState() {
+      extraForm.classList.toggle("is-disabled", extraClosed.checked);
+    }
+
+    function renderExtraSlotList() {
+      extraSlotList.innerHTML = "";
+      editAddedSlots.forEach((slot) => {
+        const li = document.createElement("li");
+        li.className = "portal__extra-chip is-add";
+        li.innerHTML = `+ ${slot} <button type="button" aria-label="Verwijderen">×</button>`;
+        li.querySelector("button").addEventListener("click", () => {
+          editAddedSlots = editAddedSlots.filter((value) => value !== slot);
+          renderExtraSlotList();
+        });
+        extraSlotList.appendChild(li);
+      });
+      editBlockedSlots.forEach((slot) => {
+        const li = document.createElement("li");
+        li.className = "portal__extra-chip is-block";
+        li.innerHTML = `− ${slot} <button type="button" aria-label="Verwijderen">×</button>`;
+        li.querySelector("button").addEventListener("click", () => {
+          editBlockedSlots = editBlockedSlots.filter((value) => value !== slot);
+          renderExtraSlotList();
+        });
+        extraSlotList.appendChild(li);
+      });
+    }
+
+    function loadExtraPanel(dateStr) {
+      extraStatus.hidden = true;
+      const override = overridesCache.get(dateStr) || null;
+      extraClosed.checked = Boolean(override?.isClosed);
+      extraOpen.value = override?.openTime || "10:00";
+      extraClose.value = override?.closeTime || "18:00";
+      extraNote.value = override?.note || "";
+      editAddedSlots = [...(override?.addedSlots || [])];
+      editBlockedSlots = [...(override?.blockedSlots || [])];
+      renderExtraSlotList();
+      updateExtraFormState();
+    }
+
+    function showExtraStatus(message, isError = false) {
+      extraStatus.hidden = false;
+      extraStatus.textContent = message;
+      extraStatus.style.color = isError ? "#ff8f8f" : "#7dcea0";
+    }
+
+    function addSlotFromInput(input, list, otherList) {
+      const value = input.value;
+      if (!value) return;
+      const slot = value.slice(0, 5);
+      if (!list.includes(slot)) list.push(slot);
+      const otherIndex = otherList.indexOf(slot);
+      if (otherIndex >= 0) otherList.splice(otherIndex, 1);
+      input.value = "";
+      renderExtraSlotList();
+    }
+
+    async function saveExtraPanel(event) {
+      event.preventDefault();
+      extraStatus.hidden = true;
+
+      const date = getSelectedDate();
+      if (!date) return;
+
+      const openTime = extraOpen.value || null;
+      const closeTime = extraClose.value || null;
+      const useCustomHours = Boolean(openTime && closeTime && !extraClosed.checked);
+
+      try {
+        const res = await fetch("/api/portal/overrides", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getToken()}`,
+          },
+          body: JSON.stringify({
+            date,
+            isClosed: extraClosed.checked,
+            openTime: useCustomHours ? openTime : null,
+            closeTime: useCustomHours ? closeTime : null,
+            addedSlots: editAddedSlots,
+            blockedSlots: editBlockedSlots,
+            note: extraNote.value.trim(),
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Opslaan mislukt");
+
+        if (data.override) overridesCache.set(date, data.override);
+        else overridesCache.delete(date);
+
+        showExtraStatus(data.message || "Opgeslagen");
+        renderDayButtons();
+      } catch (error) {
+        showExtraStatus(error.message, true);
+        if (error.message.includes("Niet ingelogd")) {
+          clearToken();
+          showLoggedOut();
+        }
+      }
+    }
+
+    async function resetExtraPanel() {
+      const date = getSelectedDate();
+      if (!date) return;
+      if (!confirm("Deze dag terugzetten naar de standaard openingstijden?")) return;
+
+      extraStatus.hidden = true;
+      try {
+        const res = await fetch(`/api/portal/overrides?date=${date}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Reset mislukt");
+
+        overridesCache.delete(date);
+        loadExtraPanel(date);
+        showExtraStatus(data.message || "Teruggezet naar standaard");
+        renderDayButtons();
+      } catch (error) {
+        showExtraStatus(error.message, true);
+      }
+    }
+
     function shiftDayWindow(direction) {
       const daysPerPage = getDaysPerPage();
       const nextStart = dayWindowStart + direction * daysPerPage;
       if (nextStart < 0 || nextStart > getMaxWindowStart()) return;
       dayWindowStart = nextStart;
-      renderDayButtons();
+      loadVisibleOverrides().then(() => {
+        renderDayButtons();
+        loadExtraPanel(getSelectedDate());
+      });
     }
 
     function setTodayOnDateInput() {
@@ -614,6 +982,7 @@
         showLoggedIn();
         setTodayOnDateInput();
         await loadAgenda();
+        await loadExtraPanel(getSelectedDate());
       } catch (error) {
         loginError.hidden = false;
         loginError.textContent = error.message;
@@ -626,10 +995,15 @@
     });
     agendaDaysPrev.addEventListener("click", () => shiftDayWindow(-1));
     agendaDaysNext.addEventListener("click", () => shiftDayWindow(1));
+    extraClosed.addEventListener("change", updateExtraFormState);
+    extraAddBtn.addEventListener("click", () => addSlotFromInput(extraAddSlot, editAddedSlots, editBlockedSlots));
+    extraBlockBtn.addEventListener("click", () => addSlotFromInput(extraBlockSlot, editBlockedSlots, editAddedSlots));
+    extraForm.addEventListener("submit", saveExtraPanel);
+    extraResetBtn.addEventListener("click", resetExtraPanel);
     window.addEventListener("resize", () => {
       if (agendaCard.hidden) return;
       syncDayWindowForDate(getSelectedDate() || formatDateString(getToday()));
-      renderDayButtons();
+      loadVisibleOverrides().then(renderDayButtons);
     });
     logoutBtn.addEventListener("click", () => {
       clearToken();

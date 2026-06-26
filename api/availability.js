@@ -1,5 +1,6 @@
 import { ensureSchema, getSql, isDbConfigured, normalizeDateString } from "./lib/db.js";
 import { getAllSlotsForDate, getBookableDates, BARBERS, isValidBarberId, normalizeBarberId, getBarberIdVariants } from "./lib/schedule.js";
+import { getOverridesForDates } from "./lib/overrides.js";
 import { handleOptions, sendJson } from "./lib/http.js";
 import { getQuery } from "./lib/query.js";
 
@@ -32,9 +33,10 @@ async function getBookedSlots(barberId, dates) {
   return bookedByDate;
 }
 
-function buildAvailabilityDays(dates, bookedByDate) {
+function buildAvailabilityDays(dates, bookedByDate, overridesMap) {
   return dates.map((date) => {
-    const allSlots = getAllSlotsForDate(date);
+    const override = overridesMap.get(date) || null;
+    const allSlots = getAllSlotsForDate(date, override);
     const booked = bookedByDate.get(date) || new Set();
     const availableSlots = allSlots.filter((slot) => !booked.has(slot));
     const total = allSlots.length;
@@ -67,22 +69,45 @@ export default async function handler(req, res) {
       return sendJson(res, 400, { error: "Ongeldige kapper" });
     }
 
-    const dates = datesParam
-      ? String(datesParam).split(",").map((d) => d.trim()).filter(Boolean)
-      : getBookableDates();
+    let dates;
+    let overridesMap = new Map();
+    let bookedByDate = new Map();
+
+    if (datesParam) {
+      dates = String(datesParam).split(",").map((d) => d.trim()).filter(Boolean);
+    } else {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const lookaheadDates = [];
+      for (let offset = 0; offset < 56; offset++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() + offset);
+        lookaheadDates.push([
+          date.getFullYear(),
+          String(date.getMonth() + 1).padStart(2, "0"),
+          String(date.getDate()).padStart(2, "0"),
+        ].join("-"));
+      }
+      try {
+        overridesMap = await getOverridesForDates(lookaheadDates);
+      } catch (dbError) {
+        console.error("Overrides niet geladen:", dbError.message);
+      }
+      dates = getBookableDates(14, 56, overridesMap);
+    }
 
     if (!dates.length) {
       return sendJson(res, 200, { days: [] });
     }
 
-    let bookedByDate = new Map();
     try {
+      overridesMap = await getOverridesForDates(dates);
       bookedByDate = await getBookedSlots(barberId, dates);
     } catch (dbError) {
       console.error("Availability fallback zonder database:", dbError.message);
     }
 
-    const days = buildAvailabilityDays(dates, bookedByDate);
+    const days = buildAvailabilityDays(dates, bookedByDate, overridesMap);
     return sendJson(res, 200, { days, dbConnected: isDbConfigured() });
   } catch (error) {
     console.error(error);
