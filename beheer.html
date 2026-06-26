@@ -209,32 +209,68 @@
     .portal__toolbar {
       display: grid;
       gap: 1rem;
-      margin-bottom: 1rem;
       min-width: 0;
       max-width: 100%;
     }
-    .portal__list { display: grid; gap: 0.75rem; }
-    .portal__item {
+    .portal__appointments-section {
+      grid-column: 1 / -1;
+      min-width: 0;
+      padding-top: 0.25rem;
+      border-top: 1px solid var(--line-light);
+    }
+    .portal__appointments-section > span {
+      display: block;
+      font-size: 0.82rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted-light);
+      margin-bottom: 0.65rem;
+    }
+    .portal__appointments-nav {
       display: grid;
-      grid-template-columns: 72px 1fr auto;
-      gap: 1rem;
-      padding: 1rem;
+      grid-template-columns: auto 1fr auto;
+      align-items: stretch;
+      gap: 0.5rem;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+    }
+    .portal__appointments {
+      display: grid;
+      grid-template-columns: repeat(var(--appts-count, 3), minmax(0, 1fr));
+      gap: 0.5rem;
+      min-width: 0;
+    }
+    .portal__item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      min-width: 0;
+      min-height: 9.5rem;
+      padding: 0.9rem 0.85rem;
       border-radius: 14px;
       border: 1px solid var(--line-light);
       background: rgba(246, 241, 231, 0.03);
-      align-items: center;
+      justify-content: space-between;
     }
     .portal__time {
       font-family: var(--serif);
-      font-size: 1.45rem;
+      font-size: 1.35rem;
       color: var(--red);
       line-height: 1;
     }
-    .portal__item h3 { font-family: var(--serif); font-size: 1.2rem; margin-bottom: 0.2rem; }
-    .portal__meta { color: var(--muted-light); font-size: 0.86rem; }
+    .portal__item h3 {
+      font-family: var(--serif);
+      font-size: 1.05rem;
+      margin: 0;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+    .portal__item-body { display: grid; gap: 0.25rem; min-width: 0; }
+    .portal__meta { color: var(--muted-light); font-size: 0.8rem; line-height: 1.35; }
     .portal__cancel {
       font-family: var(--body);
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       font-weight: 600;
@@ -242,9 +278,9 @@
       background: transparent;
       border: 1px solid rgba(204, 43, 43, 0.45);
       border-radius: 999px;
-      padding: 0.55rem 0.9rem;
+      padding: 0.5rem 0.75rem;
       cursor: pointer;
-      white-space: nowrap;
+      width: 100%;
       transition: background 0.25s var(--ease), color 0.25s var(--ease);
     }
     .portal__cancel:hover { background: var(--red); color: #fff; }
@@ -252,10 +288,23 @@
     .portal__success {
       color: #7dcea0;
       font-size: 0.88rem;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.65rem;
     }
     .portal__empty, .portal__error { color: var(--muted-light); font-size: 0.92rem; }
     .portal__error { color: #ff8f8f; }
+    .portal__appointments-empty {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 6rem;
+      border: 1px dashed var(--line-light);
+      border-radius: 14px;
+      color: var(--muted-light);
+      font-size: 0.92rem;
+      text-align: center;
+      padding: 1rem;
+    }
     .portal__back { color: var(--muted-light); font-size: 0.85rem; }
     .portal__extra-section {
       grid-column: 1 / -1;
@@ -459,8 +508,10 @@
     @media (max-width: 700px) {
       .portal { padding: 2rem 1rem 3rem; }
       .portal__toolbar { grid-template-columns: 1fr; }
-      .portal__item { grid-template-columns: 1fr; }
-      .portal__cancel { justify-self: start; width: 100%; padding: 0.75rem 1rem; }
+      .portal__item { min-height: 8.5rem; }
+      .portal__appointments-nav { gap: 0.4rem; }
+      .portal__appointments { gap: 0.45rem; }
+      .portal__cancel { padding: 0.65rem 0.85rem; }
       .portal__days-nav { gap: 0.4rem; }
       .portal__days { gap: 0.45rem; }
       .portal__days .day {
@@ -532,6 +583,17 @@
             <button type="button" class="portal__barber" data-barber="bewar">Bewar Z.</button>
           </div>
         </div>
+        <div class="portal__appointments-section">
+          <span>Afspraken</span>
+          <p class="portal__success" id="agendaSuccess" hidden></p>
+          <div class="portal__appointments-nav">
+            <button type="button" class="portal__days-arrow" id="agendaApptsPrev" aria-label="Vorige afspraken">←</button>
+            <div class="portal__appointments" id="agendaList"></div>
+            <button type="button" class="portal__days-arrow" id="agendaApptsNext" aria-label="Volgende afspraken">→</button>
+          </div>
+          <p class="portal__empty" id="agendaEmpty" hidden>Geen afspraken op deze dag.</p>
+          <p class="portal__error" id="agendaError" hidden></p>
+        </div>
         <div class="portal__extra-section">
           <span>Extra opening</span>
           <p class="portal__extra-hint" id="extraHint">Kies eerst een kapper om dagen of tijdslots voor die kapper aan te passen.</p>
@@ -581,10 +643,6 @@
           </form>
         </div>
       </div>
-      <p class="portal__success" id="agendaSuccess" hidden></p>
-      <div class="portal__list" id="agendaList"></div>
-      <p class="portal__empty" id="agendaEmpty" hidden>Geen afspraken op deze dag.</p>
-      <p class="portal__error" id="agendaError" hidden></p>
     </section>
   </main>
 
@@ -601,6 +659,8 @@
     const agendaToday = document.getElementById("agendaToday");
     const agendaBarbers = document.getElementById("agendaBarbers");
     const agendaList = document.getElementById("agendaList");
+    const agendaApptsPrev = document.getElementById("agendaApptsPrev");
+    const agendaApptsNext = document.getElementById("agendaApptsNext");
     const agendaEmpty = document.getElementById("agendaEmpty");
     const agendaError = document.getElementById("agendaError");
     const agendaSuccess = document.getElementById("agendaSuccess");
@@ -655,6 +715,8 @@
     let overridesCache = new Map();
     let editAddedSlots = [];
     let editBlockedSlots = [];
+    let agendaAppointments = [];
+    let appointmentWindowStart = 0;
 
     const barberNames = { bewar: "Bewar Z.", zennar: "Zennar Z." };
 
@@ -694,6 +756,73 @@
 
     function getDaysPerPage() {
       return window.matchMedia("(max-width: 700px)").matches ? 5 : 7;
+    }
+
+    function getApptsPerPage() {
+      return window.matchMedia("(max-width: 700px)").matches ? 2 : 3;
+    }
+
+    function compareAppointmentTime(a, b) {
+      return String(a.time).localeCompare(String(b.time));
+    }
+
+    function getMaxApptWindowStart() {
+      return Math.max(0, agendaAppointments.length - getApptsPerPage());
+    }
+
+    function updateApptNavButtons() {
+      if (!agendaApptsPrev || !agendaApptsNext) return;
+      const hasOverflow = agendaAppointments.length > getApptsPerPage();
+      agendaApptsPrev.disabled = !hasOverflow || appointmentWindowStart <= 0;
+      agendaApptsNext.disabled = !hasOverflow || appointmentWindowStart >= getMaxApptWindowStart();
+    }
+
+    function renderAgendaAppointments() {
+      const perPage = getApptsPerPage();
+      agendaList.style.setProperty("--appts-count", String(perPage));
+      agendaList.innerHTML = "";
+      agendaEmpty.hidden = true;
+
+      if (!agendaAppointments.length) {
+        agendaList.innerHTML = '<p class="portal__appointments-empty">Geen afspraken op deze dag.</p>';
+        updateApptNavButtons();
+        return;
+      }
+
+      if (appointmentWindowStart > getMaxApptWindowStart()) {
+        appointmentWindowStart = getMaxApptWindowStart();
+      }
+
+      agendaAppointments
+        .slice(appointmentWindowStart, appointmentWindowStart + perPage)
+        .forEach((item) => {
+          const el = document.createElement("article");
+          el.className = "portal__item";
+          const name = `${item.firstName} ${item.lastName}`;
+          el.innerHTML = `
+            <div class="portal__time">${item.time}</div>
+            <div class="portal__item-body">
+              <h3>${name}</h3>
+              <p class="portal__meta">${item.serviceName} · ${item.barberName}</p>
+              <p class="portal__meta">${item.phone || "Geen telefoon"}${item.email ? ` · ${item.email}` : ""}</p>
+            </div>
+            <button type="button" class="portal__cancel">Annuleren</button>
+          `;
+          el.querySelector(".portal__cancel").addEventListener("click", () => {
+            cancelAppointment(item.id, name, item.time);
+          });
+          agendaList.appendChild(el);
+        });
+
+      updateApptNavButtons();
+    }
+
+    function shiftApptWindow(direction) {
+      const perPage = getApptsPerPage();
+      const nextStart = appointmentWindowStart + direction * perPage;
+      if (nextStart < 0 || nextStart > getMaxApptWindowStart()) return;
+      appointmentWindowStart = nextStart;
+      renderAgendaAppointments();
     }
 
     function getToday() {
@@ -1167,7 +1296,8 @@
     async function loadAgenda() {
       agendaError.hidden = true;
       agendaEmpty.hidden = true;
-      agendaList.innerHTML = "Laden…";
+      agendaList.innerHTML = '<p class="portal__appointments-empty">Laden…</p>';
+      appointmentWindowStart = 0;
 
       const params = new URLSearchParams({ date: getSelectedDate() });
       const barber = getSelectedBarber();
@@ -1180,34 +1310,14 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Kon agenda niet laden");
 
-        agendaList.innerHTML = "";
-        if (!data.appointments.length) {
-          agendaEmpty.hidden = false;
-          return;
-        }
-
-        data.appointments.forEach((item) => {
-          const el = document.createElement("article");
-          el.className = "portal__item";
-          const name = `${item.firstName} ${item.lastName}`;
-          el.innerHTML = `
-            <div class="portal__time">${item.time}</div>
-            <div>
-              <h3>${name}</h3>
-              <p class="portal__meta">${item.serviceName} · ${item.barberName}</p>
-              <p class="portal__meta">${item.phone || "Geen telefoon"}${item.email ? ` · ${item.email}` : ""}</p>
-            </div>
-            <button type="button" class="portal__cancel">Annuleren</button>
-          `;
-          el.querySelector(".portal__cancel").addEventListener("click", () => {
-            cancelAppointment(item.id, name, item.time);
-          });
-          agendaList.appendChild(el);
-        });
+        agendaAppointments = [...data.appointments].sort(compareAppointmentTime);
+        renderAgendaAppointments();
       } catch (error) {
+        agendaAppointments = [];
         agendaList.innerHTML = "";
         agendaError.hidden = false;
         agendaError.textContent = error.message;
+        updateApptNavButtons();
         if (error.message.includes("Niet ingelogd")) {
           clearToken();
           showLoggedOut();
@@ -1246,6 +1356,8 @@
     });
     agendaDaysPrev.addEventListener("click", () => shiftDayWindow(-1));
     agendaDaysNext.addEventListener("click", () => shiftDayWindow(1));
+    agendaApptsPrev.addEventListener("click", () => shiftApptWindow(-1));
+    agendaApptsNext.addEventListener("click", () => shiftApptWindow(1));
     extraClosed.addEventListener("change", () => {
       updateExtraFormState();
       updateExtraMode();
@@ -1260,6 +1372,7 @@
       if (agendaCard.hidden) return;
       syncDayWindowForDate(getSelectedDate() || formatDateString(getToday()));
       loadVisibleOverrides().then(renderDayButtons);
+      renderAgendaAppointments();
     });
     logoutBtn.addEventListener("click", () => {
       clearToken();
