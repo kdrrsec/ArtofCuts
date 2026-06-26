@@ -49,7 +49,7 @@ export default async function handler(req, res) {
       return sendJson(res, 400, { error: "Voornaam en achternaam zijn verplicht" });
     }
 
-    const override = await getOverrideForDate(date);
+    const override = await getOverrideForDate(date, barber);
     const allowedSlots = getAllSlotsForDate(date, override);
     if (!allowedSlots.includes(time)) {
       return sendJson(res, 400, { error: "Deze tijd is niet beschikbaar" });

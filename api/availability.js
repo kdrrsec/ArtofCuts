@@ -89,7 +89,7 @@ export default async function handler(req, res) {
         ].join("-"));
       }
       try {
-        overridesMap = await getOverridesForDates(lookaheadDates);
+        overridesMap = await getOverridesForDates(lookaheadDates, barberId);
       } catch (dbError) {
         console.error("Overrides niet geladen:", dbError.message);
       }
@@ -101,7 +101,7 @@ export default async function handler(req, res) {
     }
 
     try {
-      overridesMap = await getOverridesForDates(dates);
+      overridesMap = await getOverridesForDates(dates, barberId);
       bookedByDate = await getBookedSlots(barberId, dates);
     } catch (dbError) {
       console.error("Availability fallback zonder database:", dbError.message);

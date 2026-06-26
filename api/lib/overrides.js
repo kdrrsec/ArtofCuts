@@ -1,9 +1,11 @@
 import { ensureSchema, getSql, isDbConfigured, normalizeDateString } from "./db.js";
+import { isValidBarberId, normalizeBarberId } from "./schedule.js";
 
 function normalizeOverrideRow(row) {
   if (!row) return null;
   return {
     date: normalizeDateString(row.override_date),
+    barber: normalizeBarberId(row.barber_id),
     isClosed: Boolean(row.is_closed),
     openTime: row.open_time || null,
     closeTime: row.close_time || null,
@@ -14,17 +16,19 @@ function normalizeOverrideRow(row) {
   };
 }
 
-export async function getOverridesForDates(dates) {
+export async function getOverridesForDates(dates, barberId) {
   const map = new Map();
-  if (!dates.length) return map;
+  if (!dates.length || !barberId || !isValidBarberId(barberId)) return map;
   if (!isDbConfigured()) return map;
 
   await ensureSchema();
   const sql = getSql();
+  const normalizedBarber = normalizeBarberId(barberId);
   const uniqueDates = [...new Set(dates.map(normalizeDateString).filter(Boolean))];
   const rows = await sql`
     SELECT
       override_date::text AS override_date,
+      barber_id,
       is_closed,
       open_time,
       close_time,
@@ -34,6 +38,7 @@ export async function getOverridesForDates(dates) {
       updated_at
     FROM schedule_overrides
     WHERE override_date = ANY(${uniqueDates})
+      AND barber_id = ${normalizedBarber}
   `;
 
   for (const row of rows) {
@@ -44,13 +49,14 @@ export async function getOverridesForDates(dates) {
   return map;
 }
 
-export async function getOverrideForDate(date) {
-  const map = await getOverridesForDates([date]);
+export async function getOverrideForDate(date, barberId) {
+  const map = await getOverridesForDates([date], barberId);
   return map.get(normalizeDateString(date)) || null;
 }
 
 export async function upsertOverride({
   date,
+  barberId,
   isClosed = false,
   openTime = null,
   closeTime = null,
@@ -58,22 +64,32 @@ export async function upsertOverride({
   blockedSlots = [],
   note = "",
 }) {
+  if (!barberId || !isValidBarberId(barberId)) {
+    throw new Error("Kies een kapper");
+  }
+
   await ensureSchema();
   const sql = getSql();
   const normalizedDate = normalizeDateString(date);
+  const normalizedBarber = normalizeBarberId(barberId);
 
   const hasCustomHours = Boolean(openTime && closeTime);
   const hasSlotChanges = addedSlots.length > 0 || blockedSlots.length > 0;
   const hasNote = Boolean(note?.trim());
 
   if (!isClosed && !hasCustomHours && !hasSlotChanges && !hasNote) {
-    await sql`DELETE FROM schedule_overrides WHERE override_date = ${normalizedDate}`;
+    await sql`
+      DELETE FROM schedule_overrides
+      WHERE override_date = ${normalizedDate}
+        AND barber_id = ${normalizedBarber}
+    `;
     return null;
   }
 
   const rows = await sql`
     INSERT INTO schedule_overrides (
       override_date,
+      barber_id,
       is_closed,
       open_time,
       close_time,
@@ -83,6 +99,7 @@ export async function upsertOverride({
       updated_at
     ) VALUES (
       ${normalizedDate},
+      ${normalizedBarber},
       ${Boolean(isClosed)},
       ${openTime || null},
       ${closeTime || null},
@@ -91,7 +108,7 @@ export async function upsertOverride({
       ${note?.trim() || null},
       NOW()
     )
-    ON CONFLICT (override_date) DO UPDATE SET
+    ON CONFLICT (override_date, barber_id) DO UPDATE SET
       is_closed = EXCLUDED.is_closed,
       open_time = EXCLUDED.open_time,
       close_time = EXCLUDED.close_time,
@@ -101,6 +118,7 @@ export async function upsertOverride({
       updated_at = NOW()
     RETURNING
       override_date::text AS override_date,
+      barber_id,
       is_closed,
       open_time,
       close_time,
@@ -113,10 +131,18 @@ export async function upsertOverride({
   return normalizeOverrideRow(rows[0]);
 }
 
-export async function deleteOverride(date) {
+export async function deleteOverride(date, barberId) {
   if (!isDbConfigured()) return false;
+  if (!barberId || !isValidBarberId(barberId)) {
+    throw new Error("Kies een kapper");
+  }
+
   await ensureSchema();
   const sql = getSql();
-  await sql`DELETE FROM schedule_overrides WHERE override_date = ${normalizeDateString(date)}`;
+  await sql`
+    DELETE FROM schedule_overrides
+    WHERE override_date = ${normalizeDateString(date)}
+      AND barber_id = ${normalizeBarberId(barberId)}
+  `;
   return true;
 }

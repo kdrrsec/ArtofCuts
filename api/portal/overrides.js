@@ -1,6 +1,6 @@
 import { getOverridesForDates, upsertOverride, deleteOverride } from "../lib/overrides.js";
 import { getBearerToken, verifyPortalToken } from "../lib/auth.js";
-import { isValidClockTime } from "../lib/schedule.js";
+import { isValidBarberId, isValidClockTime, normalizeBarberId } from "../lib/schedule.js";
 import { handleOptions, readJsonBody, sendJson } from "../lib/http.js";
 import { getQuery } from "../lib/query.js";
 
@@ -10,6 +10,14 @@ function parseSlotList(value) {
     return [...new Set(value.map((slot) => String(slot).trim()).filter((slot) => /^\d{2}:\d{2}$/.test(slot)))];
   }
   return [];
+}
+
+function requireBarberId(value) {
+  const barberId = normalizeBarberId(value);
+  if (!barberId || !isValidBarberId(barberId)) {
+    return null;
+  }
+  return barberId;
 }
 
 export default async function handler(req, res) {
@@ -23,24 +31,34 @@ export default async function handler(req, res) {
   try {
     if (req.method === "GET") {
       const query = getQuery(req);
+      const barberId = requireBarberId(query.barber);
       const dates = query.dates
         ? String(query.dates).split(",").map((d) => d.trim()).filter(Boolean)
         : query.date
           ? [String(query.date).trim()]
           : [];
 
+      if (!barberId) {
+        return sendJson(res, 400, { error: "Kies een kapper" });
+      }
+
       if (!dates.length || dates.some((date) => !/^\d{4}-\d{2}-\d{2}$/.test(date))) {
         return sendJson(res, 400, { error: "Kies een geldige datum" });
       }
 
-      const overrides = await getOverridesForDates(dates);
+      const overrides = await getOverridesForDates(dates, barberId);
       const items = dates.map((date) => overrides.get(date) || null);
-      return sendJson(res, 200, { overrides: items });
+      return sendJson(res, 200, { overrides: items, barber: barberId });
     }
 
     if (req.method === "PUT") {
       const body = await readJsonBody(req);
       const date = body.date;
+      const barberId = requireBarberId(body.barber);
+
+      if (!barberId) {
+        return sendJson(res, 400, { error: "Kies een kapper" });
+      }
 
       if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
         return sendJson(res, 400, { error: "Kies een geldige datum" });
@@ -59,6 +77,7 @@ export default async function handler(req, res) {
 
       const override = await upsertOverride({
         date,
+        barberId,
         isClosed: Boolean(body.isClosed),
         openTime,
         closeTime,
@@ -76,12 +95,17 @@ export default async function handler(req, res) {
     if (req.method === "DELETE") {
       const query = getQuery(req);
       const date = query.date;
+      const barberId = requireBarberId(query.barber);
+
+      if (!barberId) {
+        return sendJson(res, 400, { error: "Kies een kapper" });
+      }
 
       if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
         return sendJson(res, 400, { error: "Kies een geldige datum" });
       }
 
-      await deleteOverride(date);
+      await deleteOverride(date, barberId);
       return sendJson(res, 200, { message: "Dag teruggezet naar standaard" });
     }
 

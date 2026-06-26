@@ -60,18 +60,34 @@ export async function ensureSchema() {
     ON appointments (barber_id, appointment_date, appointment_time)
     WHERE cancelled_at IS NULL
   `;
+
   await sql`
     CREATE TABLE IF NOT EXISTS schedule_overrides (
-      override_date DATE PRIMARY KEY,
+      override_date DATE NOT NULL,
+      barber_id TEXT NOT NULL,
       is_closed BOOLEAN NOT NULL DEFAULT FALSE,
       open_time TEXT,
       close_time TEXT,
       added_slots TEXT[] NOT NULL DEFAULT '{}',
       blocked_slots TEXT[] NOT NULL DEFAULT '{}',
       note TEXT,
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (override_date, barber_id)
     )
   `;
+
+  const columns = await sql`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_name = 'schedule_overrides'
+  `;
+  const columnNames = new Set(columns.map((row) => row.column_name));
+  if (!columnNames.has("barber_id")) {
+    await sql`ALTER TABLE schedule_overrides ADD COLUMN barber_id TEXT NOT NULL DEFAULT 'bewar'`;
+    await sql`ALTER TABLE schedule_overrides DROP CONSTRAINT IF EXISTS schedule_overrides_pkey`;
+    await sql`ALTER TABLE schedule_overrides ADD PRIMARY KEY (override_date, barber_id)`;
+  }
+
   schemaReady = true;
 }
 

@@ -383,8 +383,7 @@
       font-size: 0.86rem;
       color: #7dcea0;
     }
-    .portal__extra-form.is-disabled .portal__extra-hours,
-    .portal__extra-form.is-disabled .portal__extra-slots {
+    .portal__extra-form.is-disabled {
       opacity: 0.45;
       pointer-events: none;
     }
@@ -477,11 +476,11 @@
         </div>
         <div class="portal__extra-section">
           <span>Extra opening</span>
-          <p class="portal__extra-hint">Open een extra dag, sluit een dag, of pas tijdslots aan voor klant-boekingen.</p>
+          <p class="portal__extra-hint" id="extraHint">Kies eerst een kapper om dagen of tijdslots voor die kapper aan te passen.</p>
           <form class="portal__extra-form" id="extraForm">
             <label class="portal__extra-check">
               <input type="checkbox" id="extraClosed" />
-              <span>Dag sluiten (geen online afspraken)</span>
+              <span>Dag sluiten voor geselecteerde kapper</span>
             </label>
             <div class="portal__extra-hours" id="extraHoursWrap">
               <span>Eigen openingstijden op deze dag</span>
@@ -554,6 +553,7 @@
     const extraNote = document.getElementById("extraNote");
     const extraResetBtn = document.getElementById("extraResetBtn");
     const extraStatus = document.getElementById("extraStatus");
+    const extraHint = document.getElementById("extraHint");
 
     function getToken() {
       return sessionStorage.getItem(TOKEN_KEY);
@@ -586,6 +586,16 @@
     let overridesCache = new Map();
     let editAddedSlots = [];
     let editBlockedSlots = [];
+
+    const barberNames = { bewar: "Bewar Z.", zennar: "Zennar Z." };
+
+    function getOverrideCacheKey(dateStr, barberId) {
+      return `${dateStr}:${barberId}`;
+    }
+
+    function canEditOverrides() {
+      return Boolean(getSelectedBarber());
+    }
 
     function isWeekdayClosed(date) {
       return date.getDay() === 0 || date.getDay() === 1;
@@ -665,6 +675,7 @@
     }
 
     async function loadVisibleOverrides() {
+      const barber = getSelectedBarber();
       const daysPerPage = getDaysPerPage();
       const dates = [];
       const end = Math.min(dayWindowStart + daysPerPage, TOTAL_DAYS);
@@ -673,20 +684,35 @@
       }
       if (!dates.length) return;
 
+      for (const key of [...overridesCache.keys()]) {
+        if (dates.some((date) => key.startsWith(`${date}:`))) {
+          overridesCache.delete(key);
+        }
+      }
+
+      if (!barber) return;
+
       try {
-        const res = await fetch(`/api/portal/overrides?dates=${dates.join(",")}`, {
+        const res = await fetch(`/api/portal/overrides?dates=${dates.join(",")}&barber=${barber}`, {
           headers: { Authorization: `Bearer ${getToken()}` },
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Kon extra openingen niet laden");
         dates.forEach((date, index) => {
+          const key = getOverrideCacheKey(date, barber);
           const override = data.overrides[index];
-          if (override) overridesCache.set(date, override);
-          else overridesCache.delete(date);
+          if (override) overridesCache.set(key, override);
+          else overridesCache.delete(key);
         });
       } catch (error) {
         console.error(error);
       }
+    }
+
+    function getOverrideForSelectedBarber(dateStr) {
+      const barber = getSelectedBarber();
+      if (!barber) return null;
+      return overridesCache.get(getOverrideCacheKey(dateStr, barber)) || null;
     }
 
     function renderDayButtons() {
@@ -698,7 +724,7 @@
       for (let offset = dayWindowStart; offset < end; offset++) {
         const date = getDateAtOffset(offset);
         const dateStr = formatDateString(date);
-        const override = overridesCache.get(dateStr) || null;
+        const override = getOverrideForSelectedBarber(dateStr);
         const closed = override?.isClosed || (!override && isWeekdayClosed(date));
         const hasExtra = Boolean(
           override && (override.isClosed || override.openTime || override.addedSlots?.length || override.blockedSlots?.length)
@@ -727,7 +753,13 @@
     }
 
     function updateExtraFormState() {
-      extraForm.classList.toggle("is-disabled", extraClosed.checked);
+      const barber = getSelectedBarber();
+      extraForm.classList.toggle("is-disabled", !barber);
+      if (!barber) {
+        extraHint.textContent = "Kies eerst een kapper om dagen of tijdslots voor die kapper aan te passen.";
+        return;
+      }
+      extraHint.textContent = `Instellingen gelden alleen voor ${barberNames[barber] || barber}.`;
     }
 
     function renderExtraSlotList() {
@@ -756,7 +788,20 @@
 
     function loadExtraPanel(dateStr) {
       extraStatus.hidden = true;
-      const override = overridesCache.get(dateStr) || null;
+      const barber = getSelectedBarber();
+      if (!barber) {
+        extraClosed.checked = false;
+        extraOpen.value = "10:00";
+        extraClose.value = "18:00";
+        extraNote.value = "";
+        editAddedSlots = [];
+        editBlockedSlots = [];
+        renderExtraSlotList();
+        updateExtraFormState();
+        return;
+      }
+
+      const override = getOverrideForSelectedBarber(dateStr);
       extraClosed.checked = Boolean(override?.isClosed);
       extraOpen.value = override?.openTime || "10:00";
       extraClose.value = override?.closeTime || "18:00";
@@ -789,7 +834,8 @@
       extraStatus.hidden = true;
 
       const date = getSelectedDate();
-      if (!date) return;
+      const barber = getSelectedBarber();
+      if (!date || !barber) return;
 
       const openTime = extraOpen.value || null;
       const closeTime = extraClose.value || null;
@@ -804,6 +850,7 @@
           },
           body: JSON.stringify({
             date,
+            barber,
             isClosed: extraClosed.checked,
             openTime: useCustomHours ? openTime : null,
             closeTime: useCustomHours ? closeTime : null,
@@ -815,8 +862,8 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Opslaan mislukt");
 
-        if (data.override) overridesCache.set(date, data.override);
-        else overridesCache.delete(date);
+        if (data.override) overridesCache.set(getOverrideCacheKey(date, barber), data.override);
+        else overridesCache.delete(getOverrideCacheKey(date, barber));
 
         showExtraStatus(data.message || "Opgeslagen");
         renderDayButtons();
@@ -831,19 +878,20 @@
 
     async function resetExtraPanel() {
       const date = getSelectedDate();
-      if (!date) return;
-      if (!confirm("Deze dag terugzetten naar de standaard openingstijden?")) return;
+      const barber = getSelectedBarber();
+      if (!date || !barber) return;
+      if (!confirm(`Deze dag terugzetten naar standaard voor ${barberNames[barber] || barber}?`)) return;
 
       extraStatus.hidden = true;
       try {
-        const res = await fetch(`/api/portal/overrides?date=${date}`, {
+        const res = await fetch(`/api/portal/overrides?date=${date}&barber=${barber}`, {
           method: "DELETE",
           headers: { Authorization: `Bearer ${getToken()}` },
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Reset mislukt");
 
-        overridesCache.delete(date);
+        overridesCache.delete(getOverrideCacheKey(date, barber));
         loadExtraPanel(date);
         showExtraStatus(data.message || "Teruggezet naar standaard");
         renderDayButtons();
@@ -877,7 +925,11 @@
       if (!btn) return;
       agendaBarbers.querySelectorAll(".portal__barber").forEach((b) => b.classList.remove("is-active"));
       btn.classList.add("is-active");
-      loadAgenda();
+      loadVisibleOverrides().then(() => {
+        renderDayButtons();
+        loadExtraPanel(getSelectedDate());
+        loadAgenda();
+      });
     });
 
     async function cancelAppointment(id, name, time) {
