@@ -14,12 +14,15 @@ export default async function handler(req, res) {
     return sendJson(res, 200, data);
   } catch (error) {
     console.error(error);
-    return sendJson(res, 500, {
-      configured: false,
+    const fallback = {
+      configured: true,
+      source: "manual",
       reviews: [],
       rating: null,
       total: null,
+      googleMapsUri: "https://www.google.com/maps/search/?api=1&query=Art+of+Cuts&query_place_id=ChIJ61Gk9d19E0cR4v3W9bO3Kq8",
       error: error.message || "Kon reviews niet laden",
-    });
+    };
+    return sendJson(res, 200, fallback);
   }
 }

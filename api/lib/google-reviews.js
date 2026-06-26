@@ -1,3 +1,5 @@
+import staticReviews from "../data/reviews.json" with { type: "json" };
+
 const DEFAULT_PLACE_ID = "ChIJ61Gk9d19E0cR4v3W9bO3Kq8";
 const DEFAULT_MAPS_URI =
   "https://www.google.com/maps/search/?api=1&query=Art+of+Cuts&query_place_id=ChIJ61Gk9d19E0cR4v3W9bO3Kq8";
@@ -16,28 +18,38 @@ function normalizePlaceId(value) {
 }
 
 function normalizeReview(review) {
-  const text = review?.text?.text || review?.originalText?.text || "";
-  if (!text.trim()) return null;
+  const text = review?.text?.text || review?.originalText?.text || review?.text || "";
+  if (!String(text).trim()) return null;
 
   return {
-    author: review?.authorAttribution?.displayName || "Google-gebruiker",
+    author: review?.authorAttribution?.displayName || review?.author || "Google-gebruiker",
     rating: Number(review?.rating) || 0,
-    text: text.trim(),
-    time: review?.relativePublishTimeDescription || "",
-    photoUri: review?.authorAttribution?.photoUri || null,
-    publishedAt: review?.publishTime || null,
+    text: String(text).trim(),
+    time: review?.relativePublishTimeDescription || review?.time || "",
+    photoUri: review?.authorAttribution?.photoUri || review?.photoUri || null,
+    publishedAt: review?.publishTime || review?.publishedAt || null,
   };
 }
 
-function buildEmptyPayload(message) {
+function normalizeStaticPayload(data) {
+  const reviews = (data.reviews || [])
+    .map(normalizeReview)
+    .filter(Boolean);
+
   return {
-    configured: false,
-    rating: null,
-    total: null,
-    googleMapsUri: DEFAULT_MAPS_URI,
-    reviews: [],
-    message,
+    configured: true,
+    source: "manual",
+    placeId: DEFAULT_PLACE_ID,
+    placeName: "Art of Cuts",
+    rating: data.rating ?? null,
+    total: data.total ?? reviews.length,
+    googleMapsUri: data.googleMapsUri || DEFAULT_MAPS_URI,
+    reviews,
   };
+}
+
+function getStaticReviews() {
+  return normalizeStaticPayload(staticReviews);
 }
 
 async function resolvePlaceId(apiKey) {
@@ -72,16 +84,7 @@ async function resolvePlaceId(apiKey) {
   return placeId;
 }
 
-export async function getGoogleReviews() {
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    return buildEmptyPayload("Google Places API-sleutel ontbreekt");
-  }
-
-  if (cachedPayload && Date.now() < cacheExpiresAt) {
-    return cachedPayload;
-  }
-
+async function fetchGoogleReviews(apiKey) {
   const placeId = await resolvePlaceId(apiKey);
   const response = await fetch(`https://places.googleapis.com/v1/places/${placeId}`, {
     headers: {
@@ -108,8 +111,9 @@ export async function getGoogleReviews() {
       return 0;
     });
 
-  const payload = {
+  return {
     configured: true,
+    source: "google",
     placeId,
     placeName: data.displayName?.text || "Art of Cuts",
     rating: data.rating ?? null,
@@ -117,8 +121,28 @@ export async function getGoogleReviews() {
     googleMapsUri: data.googleMapsUri || DEFAULT_MAPS_URI,
     reviews,
   };
+}
 
-  cachedPayload = payload;
-  cacheExpiresAt = Date.now() + CACHE_MS;
-  return payload;
+export async function getGoogleReviews() {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    return getStaticReviews();
+  }
+
+  if (cachedPayload && Date.now() < cacheExpiresAt) {
+    return cachedPayload;
+  }
+
+  try {
+    const payload = await fetchGoogleReviews(apiKey);
+    if (payload.reviews.length) {
+      cachedPayload = payload;
+      cacheExpiresAt = Date.now() + CACHE_MS;
+      return payload;
+    }
+  } catch (error) {
+    console.error("Google reviews fallback naar handmatige lijst:", error.message);
+  }
+
+  return getStaticReviews();
 }

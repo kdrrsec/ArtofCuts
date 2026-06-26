@@ -482,6 +482,7 @@ const reviewsNav = document.getElementById("reviewsNav");
 const reviewsSummary = document.getElementById("reviewsSummary");
 const reviewsScore = document.getElementById("reviewsScore");
 const reviewsGoogleLink = document.getElementById("reviewsGoogleLink");
+const reviewsWriteLink = document.getElementById("reviewsWriteLink");
 const reviewsStatus = document.getElementById("reviewsStatus");
 const reviewsCount = document.getElementById("reviewsCount");
 const reviewsPrev = document.getElementById("reviewsPrev");
@@ -604,10 +605,17 @@ async function loadGoogleReviews() {
       reviewsGoogleLink.href = data.googleMapsUri;
       reviewsSummary.hidden = false;
     }
+    if (reviewsWriteLink && data.googleMapsUri) {
+      reviewsWriteLink.href = data.googleMapsUri;
+    }
 
     if (data.rating && reviewsScore) {
       reviewsSummary.hidden = false;
-      const totalLabel = data.total ? `${data.total} reviews op Google` : "Reviews op Google";
+      const totalLabel = data.total
+        ? `${data.total} reviews op Google`
+        : data.source === "manual"
+          ? "Reviews van Google-klanten"
+          : "Reviews op Google";
       reviewsScore.innerHTML = `
         <span class="reviews__stars" aria-hidden="true">${renderStars(data.rating)}</span>
         <span>${Number(data.rating).toFixed(1)}</span>
@@ -618,11 +626,7 @@ async function loadGoogleReviews() {
 
     if (!googleReviews.length) {
       reviewsNav.hidden = true;
-      if (data.configured) {
-        setReviewsStatus("Nog geen Google-reviews om te tonen.");
-      } else {
-        setReviewsStatus("Google-reviews worden binnenkort getoond.");
-      }
+      setReviewsStatus("Nog geen reviews om te tonen.");
       return;
     }
 

@@ -56,20 +56,18 @@ Het boekingssysteem draait op Vercel Functions + Neon Postgres.
 2. Zet environment variables (zie `.env.example`):
    - `DATABASE_URL`
    - `PORTAL_PASSWORD`
-   - `GOOGLE_PLACES_API_KEY` (voor Google-reviews op de homepage)
+   - `GOOGLE_PLACES_API_KEY` (optioneel, voor automatische Google-reviews)
 3. Deploy opnieuw
 
 De database-tabel wordt automatisch aangemaakt bij de eerste API-call.
 
 ### Google-reviews
 
-Reviews worden opgehaald via de **Google Places API (New)** en getoond boven de
-kaart op de homepage. Zet in Vercel:
+Standaard worden reviews getoond uit `api/data/reviews.json` — **geen API-sleutel nodig**.
+Kopieer daar af en toe echte reviews uit je Google Business-profiel naartoe.
 
-- `GOOGLE_PLACES_API_KEY` — API-sleutel met Places API (New) ingeschakeld
-- `GOOGLE_PLACE_ID` — optioneel (standaard: Art of Cuts, Walstraat 14 Arnhem)
-
-Zonder API-sleutel toont de site een lege reviewsectie met link naar Google Maps.
+Optioneel kun je `GOOGLE_PLACES_API_KEY` zetten om reviews automatisch op te halen
+(in plaats van het handmatige bestand).
 
 ## Inhoud aanpassen
 
