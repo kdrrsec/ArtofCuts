@@ -305,6 +305,12 @@
       text-align: center;
       padding: 1rem;
     }
+    .portal__appointments-count {
+      margin: 0.45rem 0 0;
+      font-size: 0.82rem;
+      color: var(--muted-light);
+      text-align: center;
+    }
     .portal__back { color: var(--muted-light); font-size: 0.85rem; }
     .portal__extra-section {
       grid-column: 1 / -1;
@@ -591,6 +597,7 @@
             <div class="portal__appointments" id="agendaList"></div>
             <button type="button" class="portal__days-arrow" id="agendaApptsNext" aria-label="Volgende afspraken">→</button>
           </div>
+          <p class="portal__appointments-count" id="agendaApptsCount" hidden></p>
           <p class="portal__empty" id="agendaEmpty" hidden>Geen afspraken op deze dag.</p>
           <p class="portal__error" id="agendaError" hidden></p>
         </div>
@@ -661,6 +668,7 @@
     const agendaList = document.getElementById("agendaList");
     const agendaApptsPrev = document.getElementById("agendaApptsPrev");
     const agendaApptsNext = document.getElementById("agendaApptsNext");
+    const agendaApptsCount = document.getElementById("agendaApptsCount");
     const agendaEmpty = document.getElementById("agendaEmpty");
     const agendaError = document.getElementById("agendaError");
     const agendaSuccess = document.getElementById("agendaSuccess");
@@ -786,6 +794,7 @@
       if (!agendaAppointments.length) {
         agendaList.innerHTML = '<p class="portal__appointments-empty">Geen afspraken op deze dag.</p>';
         updateApptNavButtons();
+        updateApptCountLabel();
         return;
       }
 
@@ -815,11 +824,25 @@
         });
 
       updateApptNavButtons();
+      updateApptCountLabel();
+    }
+
+    function updateApptCountLabel() {
+      if (!agendaApptsCount) return;
+      const total = agendaAppointments.length;
+      const perPage = getApptsPerPage();
+      if (total <= perPage) {
+        agendaApptsCount.hidden = true;
+        return;
+      }
+      const from = appointmentWindowStart + 1;
+      const to = Math.min(appointmentWindowStart + perPage, total);
+      agendaApptsCount.hidden = false;
+      agendaApptsCount.textContent = `Afspraken ${from}–${to} van ${total} · gebruik pijltjes om verder te kijken`;
     }
 
     function shiftApptWindow(direction) {
-      const perPage = getApptsPerPage();
-      const nextStart = appointmentWindowStart + direction * perPage;
+      const nextStart = appointmentWindowStart + direction;
       if (nextStart < 0 || nextStart > getMaxApptWindowStart()) return;
       appointmentWindowStart = nextStart;
       renderAgendaAppointments();
