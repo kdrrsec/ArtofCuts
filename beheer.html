@@ -156,7 +156,7 @@
     }
     .portal__days {
       display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
+      grid-template-columns: repeat(var(--days-count, 7), minmax(0, 1fr));
       gap: 0.5rem;
       min-width: 0;
     }
@@ -165,16 +165,19 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 0.15rem;
+      gap: 0.2rem;
       width: 100%;
       min-width: 0;
-      padding: 0.75rem 0.25rem 0.85rem;
+      min-height: 3.25rem;
+      padding: 0.75rem 0.35rem 0.85rem;
       border: 1px solid var(--line-light);
       border-radius: 16px;
       background: rgba(246, 241, 231, 0.05);
       color: var(--cream);
       cursor: pointer;
       font-family: var(--body);
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
       transition: border-color 0.25s var(--ease), background 0.25s var(--ease), transform 0.2s var(--ease);
     }
     .portal__days .day:hover { border-color: var(--red); transform: translateY(-1px); }
@@ -259,11 +262,23 @@
       .portal__toolbar { grid-template-columns: 1fr; }
       .portal__item { grid-template-columns: 1fr; }
       .portal__cancel { justify-self: start; width: 100%; padding: 0.75rem 1rem; }
-      .portal__days { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.35rem; }
-      .portal__days .day { padding: 0.65rem 0.15rem 0.75rem; }
-      .portal__days .day b { font-size: 1.35rem; }
-      .portal__days .day small { font-size: 0.62rem; }
-      .portal__days-arrow { width: 2rem; height: 2rem; font-size: 1rem; }
+      .portal__days-nav { gap: 0.4rem; }
+      .portal__days { gap: 0.45rem; }
+      .portal__days .day {
+        min-height: 3.85rem;
+        padding: 0.8rem 0.3rem 0.9rem;
+        border-radius: 14px;
+      }
+      .portal__days .day b { font-size: 1.55rem; }
+      .portal__days .day small { font-size: 0.7rem; letter-spacing: 0.08em; }
+      .portal__days-arrow {
+        width: 2.85rem;
+        height: 2.85rem;
+        min-width: 2.85rem;
+        font-size: 1.2rem;
+      }
+      .portal__today { font-size: 0.82rem; padding: 0.55rem 0.95rem; }
+      .portal__selected-label { font-size: 1.25rem; margin-top: 0.6rem; }
       .portal__barber { font-size: 1rem; padding: 0.85rem 1.25rem; }
       .portal__head-row { flex-direction: column; align-items: stretch; }
     }
@@ -369,10 +384,13 @@
     const dayNames = ["zo", "ma", "di", "wo", "do", "vr", "za"];
     const dayNamesFull = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
     const monthNames = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"];
-    const DAYS_PER_PAGE = 7;
     const TOTAL_DAYS = 28;
     let selectedDate = null;
     let dayWindowStart = 0;
+
+    function getDaysPerPage() {
+      return window.matchMedia("(max-width: 700px)").matches ? 5 : 7;
+    }
 
     function getToday() {
       const today = new Date();
@@ -395,18 +413,20 @@
     }
 
     function getMaxWindowStart() {
-      return Math.max(0, TOTAL_DAYS - DAYS_PER_PAGE);
+      return Math.max(0, TOTAL_DAYS - getDaysPerPage());
     }
 
     function syncDayWindowForDate(dateStr) {
+      const daysPerPage = getDaysPerPage();
       const offset = Math.max(0, getOffsetForDate(dateStr));
-      dayWindowStart = Math.floor(offset / DAYS_PER_PAGE) * DAYS_PER_PAGE;
+      dayWindowStart = Math.floor(offset / daysPerPage) * daysPerPage;
       dayWindowStart = Math.min(dayWindowStart, getMaxWindowStart());
     }
 
     function updateDayNavButtons() {
+      const daysPerPage = getDaysPerPage();
       agendaDaysPrev.disabled = dayWindowStart <= 0;
-      agendaDaysNext.disabled = dayWindowStart + DAYS_PER_PAGE >= TOTAL_DAYS;
+      agendaDaysNext.disabled = dayWindowStart + daysPerPage >= TOTAL_DAYS;
     }
 
     function formatDateString(date) {
@@ -439,8 +459,10 @@
     }
 
     function renderDayButtons() {
+      const daysPerPage = getDaysPerPage();
+      agendaDays.style.setProperty("--days-count", String(daysPerPage));
       agendaDays.innerHTML = "";
-      const end = Math.min(dayWindowStart + DAYS_PER_PAGE, TOTAL_DAYS);
+      const end = Math.min(dayWindowStart + daysPerPage, TOTAL_DAYS);
 
       for (let offset = dayWindowStart; offset < end; offset++) {
         const date = getDateAtOffset(offset);
@@ -466,7 +488,8 @@
     }
 
     function shiftDayWindow(direction) {
-      const nextStart = dayWindowStart + direction * DAYS_PER_PAGE;
+      const daysPerPage = getDaysPerPage();
+      const nextStart = dayWindowStart + direction * daysPerPage;
       if (nextStart < 0 || nextStart > getMaxWindowStart()) return;
       dayWindowStart = nextStart;
       renderDayButtons();
@@ -603,6 +626,11 @@
     });
     agendaDaysPrev.addEventListener("click", () => shiftDayWindow(-1));
     agendaDaysNext.addEventListener("click", () => shiftDayWindow(1));
+    window.addEventListener("resize", () => {
+      if (agendaCard.hidden) return;
+      syncDayWindowForDate(getSelectedDate() || formatDateString(getToday()));
+      renderDayButtons();
+    });
     logoutBtn.addEventListener("click", () => {
       clearToken();
       showLoggedOut();
