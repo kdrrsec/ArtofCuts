@@ -251,7 +251,15 @@
       border-radius: 14px;
       border: 1px solid var(--line-light);
       background: rgba(246, 241, 231, 0.03);
-      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+      align-self: stretch;
+    }
+    .portal__item-body {
+      display: grid;
+      gap: 0.25rem;
+      min-width: 0;
+      flex: 1 1 auto;
     }
     .portal__time {
       font-family: var(--serif);
@@ -266,7 +274,6 @@
       line-height: 1.2;
       word-break: break-word;
     }
-    .portal__item-body { display: grid; gap: 0.25rem; min-width: 0; }
     .portal__meta { color: var(--muted-light); font-size: 0.8rem; line-height: 1.35; }
     .portal__cancel {
       font-family: var(--body);
@@ -281,6 +288,9 @@
       padding: 0.5rem 0.75rem;
       cursor: pointer;
       width: 100%;
+      margin-top: auto;
+      flex-shrink: 0;
+      box-sizing: border-box;
       transition: background 0.25s var(--ease), color 0.25s var(--ease);
     }
     .portal__cancel:hover { background: var(--red); color: #fff; }
@@ -514,10 +524,23 @@
     @media (max-width: 700px) {
       .portal { padding: 2rem 1rem 3rem; }
       .portal__toolbar { grid-template-columns: 1fr; }
-      .portal__item { min-height: 8.5rem; }
-      .portal__appointments-nav { gap: 0.4rem; }
-      .portal__appointments { gap: 0.45rem; }
-      .portal__cancel { padding: 0.65rem 0.85rem; }
+      .portal__appointments-nav { gap: 0.55rem; align-items: center; }
+      .portal__appointments {
+        gap: 0;
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .portal__item {
+        min-height: auto;
+        padding: 1rem 0.95rem 1.05rem;
+        gap: 0.65rem;
+      }
+      .portal__item h3 { font-size: 1.1rem; }
+      .portal__meta { font-size: 0.84rem; }
+      .portal__cancel {
+        margin-top: 0.5rem;
+        padding: 0.8rem 1rem;
+        font-size: 0.78rem;
+      }
       .portal__days-nav { gap: 0.4rem; }
       .portal__days { gap: 0.45rem; }
       .portal__days .day {
@@ -767,7 +790,7 @@
     }
 
     function getApptsPerPage() {
-      return window.matchMedia("(max-width: 700px)").matches ? 2 : 3;
+      return window.matchMedia("(max-width: 700px)").matches ? 1 : 3;
     }
 
     function compareAppointmentTime(a, b) {
