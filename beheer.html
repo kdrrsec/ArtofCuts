@@ -363,6 +363,42 @@
       line-height: 1;
       padding: 0;
     }
+    .portal__extra-quick {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      align-items: center;
+    }
+    .portal__extra-quick-btn {
+      font-family: var(--body);
+      font-size: 0.82rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-weight: 600;
+      border-radius: 999px;
+      padding: 0.75rem 1.15rem;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .portal__extra-quick-btn--open {
+      color: #0f1a14;
+      background: #7dcea0;
+      border-color: #7dcea0;
+    }
+    .portal__extra-quick-btn--open:hover { background: #9be6b4; }
+    .portal__extra-quick-btn--close {
+      color: #fff;
+      background: rgba(196, 30, 58, 0.92);
+      border-color: var(--red);
+    }
+    .portal__extra-quick-btn--close:hover { background: var(--red); }
+    .portal__extra-mode {
+      font-size: 0.92rem;
+      color: var(--cream);
+      margin: 0;
+    }
+    .portal__extra-mode.is-extra-open { color: #9be6b4; }
+    .portal__extra-mode.is-closed { color: #ffafaf; }
     .portal__extra-actions {
       display: flex;
       flex-wrap: wrap;
@@ -397,6 +433,10 @@
     }
     .portal__days .day.is-extra.is-closed::after {
       background: #ff8f8f;
+    }
+    .portal__days .day.is-extra-open {
+      border-color: rgba(125, 206, 160, 0.75);
+      box-shadow: 0 0 0 1px rgba(125, 206, 160, 0.25);
     }
     @media (max-width: 700px) {
       .portal { padding: 2rem 1rem 3rem; }
@@ -477,6 +517,11 @@
         <div class="portal__extra-section">
           <span>Extra opening</span>
           <p class="portal__extra-hint" id="extraHint">Kies eerst een kapper om dagen of tijdslots voor die kapper aan te passen.</p>
+          <p class="portal__extra-mode" id="extraMode" hidden></p>
+          <div class="portal__extra-quick" id="extraQuick">
+            <button type="button" class="portal__extra-quick-btn portal__extra-quick-btn--open" id="extraOpenDayBtn">Dag openen</button>
+            <button type="button" class="portal__extra-quick-btn portal__extra-quick-btn--close" id="extraCloseDayBtn">Dag sluiten</button>
+          </div>
           <form class="portal__extra-form" id="extraForm">
             <label class="portal__extra-check">
               <input type="checkbox" id="extraClosed" />
@@ -554,6 +599,9 @@
     const extraResetBtn = document.getElementById("extraResetBtn");
     const extraStatus = document.getElementById("extraStatus");
     const extraHint = document.getElementById("extraHint");
+    const extraMode = document.getElementById("extraMode");
+    const extraOpenDayBtn = document.getElementById("extraOpenDayBtn");
+    const extraCloseDayBtn = document.getElementById("extraCloseDayBtn");
 
     function getToken() {
       return sessionStorage.getItem(TOKEN_KEY);
@@ -599,6 +647,28 @@
 
     function isWeekdayClosed(date) {
       return date.getDay() === 0 || date.getDay() === 1;
+    }
+
+    function getDayOverrideState(date, override) {
+      if (override?.isClosed) return "closed";
+      if (override?.openTime && override?.closeTime) {
+        return isWeekdayClosed(date) ? "extra-open" : "custom-hours";
+      }
+      if (override?.addedSlots?.length || override?.blockedSlots?.length) return "adjusted";
+      if (isWeekdayClosed(date)) return "closed";
+      return "standard";
+    }
+
+    function getDayOverrideLabel(state, override) {
+      if (state === "closed") return "Deze dag is gesloten voor klanten.";
+      if (state === "extra-open") {
+        return `Extra open voor klanten (${override.openTime}–${override.closeTime}).`;
+      }
+      if (state === "custom-hours") {
+        return `Aangepaste uren voor klanten (${override.openTime}–${override.closeTime}).`;
+      }
+      if (state === "adjusted") return "Tijdslots aangepast; klanten zien de gewijzigde beschikbaarheid.";
+      return "Standaard openingstijden; klanten kunnen normaal boeken.";
     }
 
     function getDaysPerPage() {
@@ -725,16 +795,16 @@
         const date = getDateAtOffset(offset);
         const dateStr = formatDateString(date);
         const override = getOverrideForSelectedBarber(dateStr);
-        const closed = override?.isClosed || (!override && isWeekdayClosed(date));
-        const hasExtra = Boolean(
-          override && (override.isClosed || override.openTime || override.addedSlots?.length || override.blockedSlots?.length)
-        );
+        const state = getDayOverrideState(date, override);
+        const closed = state === "closed";
+        const hasExtra = state !== "standard";
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "day"
           + (dateStr === selectedDate ? " is-active" : "")
           + (closed ? " is-closed" : "")
-          + (hasExtra ? " is-extra" : "");
+          + (hasExtra ? " is-extra" : "")
+          + (state === "extra-open" ? " is-extra-open" : "");
         btn.dataset.date = dateStr;
         btn.innerHTML = `<small>${dayNames[date.getDay()]}</small><b>${date.getDate()}</b>`;
         btn.addEventListener("click", () => {
@@ -757,9 +827,31 @@
       extraForm.classList.toggle("is-disabled", !barber);
       if (!barber) {
         extraHint.textContent = "Kies eerst een kapper om dagen of tijdslots voor die kapper aan te passen.";
+        extraMode.hidden = true;
         return;
       }
       extraHint.textContent = `Instellingen gelden alleen voor ${barberNames[barber] || barber}.`;
+      updateExtraMode();
+    }
+
+    function updateExtraMode() {
+      const barber = getSelectedBarber();
+      const dateStr = getSelectedDate();
+      if (!barber || !dateStr) {
+        extraMode.hidden = true;
+        return;
+      }
+
+      const [year, month, day] = dateStr.split("-").map(Number);
+      const date = new Date(year, month - 1, day);
+      const override = getOverrideForSelectedBarber(dateStr);
+      const state = getDayOverrideState(date, override);
+
+      extraMode.hidden = false;
+      extraMode.className = "portal__extra-mode"
+        + (state === "extra-open" || state === "custom-hours" || state === "adjusted" ? " is-extra-open" : "")
+        + (state === "closed" ? " is-closed" : "");
+      extraMode.textContent = getDayOverrideLabel(state, override);
     }
 
     function renderExtraSlotList() {
@@ -812,6 +904,91 @@
       updateExtraFormState();
     }
 
+    async function saveOverride(options = {}) {
+      const date = getSelectedDate();
+      const barber = getSelectedBarber();
+      if (!date || !barber) return false;
+
+      extraStatus.hidden = true;
+
+      const isClosed = options.isClosed ?? extraClosed.checked;
+      const openTime = options.openTime ?? (extraOpen.value || null);
+      const closeTime = options.closeTime ?? (extraClose.value || null);
+      const useCustomHours = Boolean(openTime && closeTime && !isClosed);
+      const addedSlots = options.addedSlots ?? editAddedSlots;
+      const blockedSlots = options.blockedSlots ?? editBlockedSlots;
+      const note = options.note ?? extraNote.value.trim();
+
+      try {
+        const res = await fetch("/api/portal/overrides", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getToken()}`,
+          },
+          body: JSON.stringify({
+            date,
+            barber,
+            isClosed,
+            openTime: useCustomHours ? openTime : null,
+            closeTime: useCustomHours ? closeTime : null,
+            addedSlots,
+            blockedSlots,
+            note,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Opslaan mislukt");
+
+        if (data.override) overridesCache.set(getOverrideCacheKey(date, barber), data.override);
+        else overridesCache.delete(getOverrideCacheKey(date, barber));
+
+        showExtraStatus(data.message || "Opgeslagen");
+        renderDayButtons();
+        loadExtraPanel(date);
+        return true;
+      } catch (error) {
+        showExtraStatus(error.message, true);
+        if (error.message.includes("Niet ingelogd")) {
+          clearToken();
+          showLoggedOut();
+        }
+        return false;
+      }
+    }
+
+    async function openDayQuick() {
+      const barber = getSelectedBarber();
+      if (!barber) {
+        showExtraStatus("Kies eerst een kapper.", true);
+        return;
+      }
+
+      extraClosed.checked = false;
+      extraOpen.value = "10:00";
+      extraClose.value = "18:00";
+      await saveOverride({
+        isClosed: false,
+        openTime: "10:00",
+        closeTime: "18:00",
+      });
+    }
+
+    async function closeDayQuick() {
+      const barber = getSelectedBarber();
+      if (!barber) {
+        showExtraStatus("Kies eerst een kapper.", true);
+        return;
+      }
+
+      extraClosed.checked = true;
+      await saveOverride({
+        isClosed: true,
+        openTime: null,
+        closeTime: null,
+      });
+    }
+
     function showExtraStatus(message, isError = false) {
       extraStatus.hidden = false;
       extraStatus.textContent = message;
@@ -831,49 +1008,7 @@
 
     async function saveExtraPanel(event) {
       event.preventDefault();
-      extraStatus.hidden = true;
-
-      const date = getSelectedDate();
-      const barber = getSelectedBarber();
-      if (!date || !barber) return;
-
-      const openTime = extraOpen.value || null;
-      const closeTime = extraClose.value || null;
-      const useCustomHours = Boolean(openTime && closeTime && !extraClosed.checked);
-
-      try {
-        const res = await fetch("/api/portal/overrides", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${getToken()}`,
-          },
-          body: JSON.stringify({
-            date,
-            barber,
-            isClosed: extraClosed.checked,
-            openTime: useCustomHours ? openTime : null,
-            closeTime: useCustomHours ? closeTime : null,
-            addedSlots: editAddedSlots,
-            blockedSlots: editBlockedSlots,
-            note: extraNote.value.trim(),
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Opslaan mislukt");
-
-        if (data.override) overridesCache.set(getOverrideCacheKey(date, barber), data.override);
-        else overridesCache.delete(getOverrideCacheKey(date, barber));
-
-        showExtraStatus(data.message || "Opgeslagen");
-        renderDayButtons();
-      } catch (error) {
-        showExtraStatus(error.message, true);
-        if (error.message.includes("Niet ingelogd")) {
-          clearToken();
-          showLoggedOut();
-        }
-      }
+      await saveOverride();
     }
 
     async function resetExtraPanel() {
@@ -1047,7 +1182,12 @@
     });
     agendaDaysPrev.addEventListener("click", () => shiftDayWindow(-1));
     agendaDaysNext.addEventListener("click", () => shiftDayWindow(1));
-    extraClosed.addEventListener("change", updateExtraFormState);
+    extraClosed.addEventListener("change", () => {
+      updateExtraFormState();
+      updateExtraMode();
+    });
+    extraOpenDayBtn.addEventListener("click", openDayQuick);
+    extraCloseDayBtn.addEventListener("click", closeDayQuick);
     extraAddBtn.addEventListener("click", () => addSlotFromInput(extraAddSlot, editAddedSlots, editBlockedSlots));
     extraBlockBtn.addEventListener("click", () => addSlotFromInput(extraBlockSlot, editBlockedSlots, editAddedSlots));
     extraForm.addEventListener("submit", saveExtraPanel);

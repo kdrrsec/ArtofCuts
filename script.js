@@ -331,11 +331,7 @@ async function fetchAvailability() {
 
   if (bookerDetails) bookerDetails.hidden = true;
   hideBookingError();
-  bookableDates = getLocalBookableDates();
-  const params = new URLSearchParams({
-    barber,
-    dates: bookableDates.join(","),
-  });
+  const params = new URLSearchParams({ barber });
 
   try {
     const res = await fetch(`/api/availability?${params.toString()}`);
@@ -348,11 +344,13 @@ async function fetchAvailability() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Kon beschikbaarheid niet laden");
 
+    bookableDates = data.days.map((day) => day.date);
     availabilityByDate = new Map(data.days.map((day) => [day.date, day]));
     renderBookingDays(getSelectedDate());
     hideBookingError();
   } catch (error) {
     console.warn("Availability fallback:", error);
+    bookableDates = getLocalBookableDates();
     const localDays = buildLocalAvailability(bookableDates);
     availabilityByDate = new Map(localDays.map((day) => [day.date, day]));
     renderBookingDays(getSelectedDate());
