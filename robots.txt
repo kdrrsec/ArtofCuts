@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
+Disallow: /beheer
 Disallow: /kapper/
-Disallow: /beheer.html
 Disallow: /annuleren
 
 Sitemap: https://artofcuts.nl/sitemap.xml

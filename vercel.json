@@ -10,8 +10,13 @@
     },
     {
       "source": "/beheer.html",
-      "destination": "/404.html",
-      "statusCode": 404
+      "destination": "/beheer",
+      "permanent": true
+    },
+    {
+      "source": "/kapper/agenda",
+      "destination": "/beheer",
+      "permanent": true
     },
     {
       "source": "/annuleren.html",
@@ -25,13 +30,13 @@
       "destination": "/annuleren.html"
     },
     {
-      "source": "/kapper/agenda",
+      "source": "/beheer",
       "destination": "/beheer.html"
     }
   ],
   "headers": [
     {
-      "source": "/kapper/agenda",
+      "source": "/beheer",
       "headers": [
         { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
       ]

@@ -46,7 +46,7 @@ Het boekingssysteem draait op Vercel Functions + Neon Postgres.
 4. Annuleren via persoonlijke link op `/annuleren`
 
 ### Kapper-portaal
-- Open `/kapper/agenda` (niet publiek gelinkt; `/beheer.html` geeft 404)
+- Open `/beheer` (niet publiek gelinkt; `/beheer.html` redirect naar `/beheer`)
 - Inloggen met `PORTAL_PASSWORD`
 - Agenda per dag en per kapper inzien
 - **Extra opening**: dagen sluiten, eigen uren instellen, tijdslots toevoegen of blokkeren
