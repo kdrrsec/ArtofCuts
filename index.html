@@ -374,6 +374,25 @@
             <a href="tel:0614450069">06-14450069</a>
           </p>
         </div>
+
+        <div class="reviews" id="reviews" data-reveal data-delay="2">
+          <p class="label">Reviews</p>
+          <div class="reviews__head">
+            <h3 class="reviews__title h-serif">Wat klanten zeggen</h3>
+            <div class="reviews__summary" id="reviewsSummary" hidden>
+              <div class="reviews__score" id="reviewsScore" aria-label="Google beoordeling"></div>
+              <a href="#" class="reviews__google-link" id="reviewsGoogleLink" target="_blank" rel="noopener noreferrer">Bekijk op Google</a>
+            </div>
+          </div>
+          <div class="reviews__nav" id="reviewsNav" hidden>
+            <button type="button" class="reviews__arrow" id="reviewsPrev" aria-label="Vorige review">←</button>
+            <div class="reviews__track" id="reviewsTrack"></div>
+            <button type="button" class="reviews__arrow" id="reviewsNext" aria-label="Volgende review">→</button>
+          </div>
+          <p class="reviews__status" id="reviewsStatus">Reviews laden…</p>
+          <p class="reviews__count" id="reviewsCount" hidden></p>
+        </div>
+
         <div class="map" data-reveal data-delay="3">
           <iframe
             title="Locatie Art of Cuts"
@@ -426,7 +445,7 @@
     </nav>
   </div>
 
-  <script src="script.js?v=6"></script>
+  <script src="script.js?v=7"></script>
 </body>
 </html>
 

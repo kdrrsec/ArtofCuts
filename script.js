@@ -472,3 +472,172 @@ document.querySelectorAll(".team .barber[data-barber]").forEach((link) => {
 if (bookerSubmit) {
   bookerSubmit.addEventListener("click", submitBooking);
 }
+
+/* -----------------------------------------------------------
+   Google reviews
+   ----------------------------------------------------------- */
+
+const reviewsTrack = document.getElementById("reviewsTrack");
+const reviewsNav = document.getElementById("reviewsNav");
+const reviewsSummary = document.getElementById("reviewsSummary");
+const reviewsScore = document.getElementById("reviewsScore");
+const reviewsGoogleLink = document.getElementById("reviewsGoogleLink");
+const reviewsStatus = document.getElementById("reviewsStatus");
+const reviewsCount = document.getElementById("reviewsCount");
+const reviewsPrev = document.getElementById("reviewsPrev");
+const reviewsNext = document.getElementById("reviewsNext");
+
+let googleReviews = [];
+let reviewsWindowStart = 0;
+
+function getReviewsPerPage() {
+  return window.matchMedia("(max-width: 700px)").matches ? 1 : 2;
+}
+
+function renderStars(rating) {
+  const rounded = Math.round(rating);
+  return "★★★★★".slice(0, rounded) + "☆☆☆☆☆".slice(0, 5 - rounded);
+}
+
+function getMaxReviewsWindowStart() {
+  return Math.max(0, googleReviews.length - getReviewsPerPage());
+}
+
+function updateReviewsNavButtons() {
+  if (!reviewsPrev || !reviewsNext) return;
+  const hasOverflow = googleReviews.length > getReviewsPerPage();
+  reviewsPrev.disabled = !hasOverflow || reviewsWindowStart <= 0;
+  reviewsNext.disabled = !hasOverflow || reviewsWindowStart >= getMaxReviewsWindowStart();
+}
+
+function updateReviewsCountLabel() {
+  if (!reviewsCount) return;
+  const total = googleReviews.length;
+  const perPage = getReviewsPerPage();
+  if (total <= perPage) {
+    reviewsCount.hidden = true;
+    return;
+  }
+  const from = reviewsWindowStart + 1;
+  const to = Math.min(reviewsWindowStart + perPage, total);
+  reviewsCount.hidden = false;
+  reviewsCount.textContent = `Review ${from}${to > from ? `–${to}` : ""} van ${total}`;
+}
+
+function renderReviewCard(review) {
+  const card = document.createElement("article");
+  card.className = "reviews__card";
+
+  const avatar = review.photoUri
+    ? `<img class="reviews__avatar" src="${review.photoUri}" alt="" loading="lazy" referrerpolicy="no-referrer" />`
+    : `<span class="reviews__avatar reviews__avatar--fallback" aria-hidden="true">${review.author.charAt(0).toUpperCase()}</span>`;
+
+  card.innerHTML = `
+    <div class="reviews__card-top">
+      ${avatar}
+      <div class="reviews__author">
+        <b>${review.author}</b>
+        <small>${review.time || "Google review"}</small>
+      </div>
+      <span class="reviews__stars" aria-label="${review.rating} van 5 sterren">${renderStars(review.rating)}</span>
+    </div>
+    <p class="reviews__text"></p>
+  `;
+  card.querySelector(".reviews__text").textContent = review.text;
+  return card;
+}
+
+function renderGoogleReviews() {
+  if (!reviewsTrack) return;
+
+  const perPage = getReviewsPerPage();
+  reviewsTrack.style.setProperty("--reviews-count", String(perPage));
+  reviewsTrack.innerHTML = "";
+
+  if (!googleReviews.length) {
+    reviewsNav.hidden = true;
+    updateReviewsNavButtons();
+    updateReviewsCountLabel();
+    return;
+  }
+
+  if (reviewsWindowStart > getMaxReviewsWindowStart()) {
+    reviewsWindowStart = getMaxReviewsWindowStart();
+  }
+
+  reviewsNav.hidden = false;
+  googleReviews
+    .slice(reviewsWindowStart, reviewsWindowStart + perPage)
+    .forEach((review) => {
+      reviewsTrack.appendChild(renderReviewCard(review));
+    });
+
+  updateReviewsNavButtons();
+  updateReviewsCountLabel();
+}
+
+function shiftReviewsWindow(direction) {
+  const nextStart = reviewsWindowStart + direction;
+  if (nextStart < 0 || nextStart > getMaxReviewsWindowStart()) return;
+  reviewsWindowStart = nextStart;
+  renderGoogleReviews();
+}
+
+function setReviewsStatus(message) {
+  if (!reviewsStatus) return;
+  reviewsStatus.hidden = false;
+  reviewsStatus.textContent = message;
+}
+
+async function loadGoogleReviews() {
+  if (!reviewsTrack) return;
+
+  try {
+    const res = await fetch("/api/reviews", { cache: "no-store" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Kon reviews niet laden");
+
+    googleReviews = Array.isArray(data.reviews) ? data.reviews : [];
+    reviewsWindowStart = 0;
+
+    if (reviewsGoogleLink && data.googleMapsUri) {
+      reviewsGoogleLink.href = data.googleMapsUri;
+      reviewsSummary.hidden = false;
+    }
+
+    if (data.rating && reviewsScore) {
+      reviewsSummary.hidden = false;
+      const totalLabel = data.total ? `${data.total} reviews op Google` : "Reviews op Google";
+      reviewsScore.innerHTML = `
+        <span class="reviews__stars" aria-hidden="true">${renderStars(data.rating)}</span>
+        <span>${Number(data.rating).toFixed(1)}</span>
+        <small>${totalLabel}</small>
+      `;
+      reviewsScore.setAttribute("aria-label", `${Number(data.rating).toFixed(1)} van 5 sterren, ${totalLabel}`);
+    }
+
+    if (!googleReviews.length) {
+      reviewsNav.hidden = true;
+      if (data.configured) {
+        setReviewsStatus("Nog geen Google-reviews om te tonen.");
+      } else {
+        setReviewsStatus("Google-reviews worden binnenkort getoond.");
+      }
+      return;
+    }
+
+    if (reviewsStatus) reviewsStatus.hidden = true;
+    renderGoogleReviews();
+  } catch (error) {
+    console.warn("Reviews laden mislukt:", error);
+    reviewsNav.hidden = true;
+    setReviewsStatus("Reviews zijn nu even niet beschikbaar.");
+  }
+}
+
+if (reviewsTrack) {
+  reviewsPrev?.addEventListener("click", () => shiftReviewsWindow(-1));
+  reviewsNext?.addEventListener("click", () => shiftReviewsWindow(1));
+  window.addEventListener("resize", renderGoogleReviews);
+  loadGoogleReviews();
+}
