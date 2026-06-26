@@ -276,6 +276,24 @@
       font-size: 0.86rem;
       margin-bottom: 0.9rem;
     }
+    .portal__extra-barber {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.55rem 0.85rem;
+      border-radius: 999px;
+      border: 1px solid rgba(125, 206, 160, 0.45);
+      background: rgba(125, 206, 160, 0.12);
+      color: #9be6b4;
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin-bottom: 0.85rem;
+    }
+    .portal__extra-barber[hidden] { display: none !important; }
+    .portal__extra-quick.is-disabled {
+      opacity: 0.45;
+      pointer-events: none;
+    }
     .portal__extra-form {
       display: grid;
       gap: 0.9rem;
@@ -510,15 +528,16 @@
           <span>Kapper</span>
           <div class="portal__barbers" id="agendaBarbers">
             <button type="button" class="portal__barber is-active" data-barber="">Alle kappers</button>
-            <button type="button" class="portal__barber" data-barber="bewar">Bewar Z.</button>
             <button type="button" class="portal__barber" data-barber="zennar">Zennar Z.</button>
+            <button type="button" class="portal__barber" data-barber="bewar">Bewar Z.</button>
           </div>
         </div>
         <div class="portal__extra-section">
           <span>Extra opening</span>
           <p class="portal__extra-hint" id="extraHint">Kies eerst een kapper om dagen of tijdslots voor die kapper aan te passen.</p>
+          <p class="portal__extra-barber" id="extraBarberBadge" hidden></p>
           <p class="portal__extra-mode" id="extraMode" hidden></p>
-          <div class="portal__extra-quick" id="extraQuick">
+          <div class="portal__extra-quick is-disabled" id="extraQuick">
             <button type="button" class="portal__extra-quick-btn portal__extra-quick-btn--open" id="extraOpenDayBtn">Dag openen</button>
             <button type="button" class="portal__extra-quick-btn portal__extra-quick-btn--close" id="extraCloseDayBtn">Dag sluiten</button>
           </div>
@@ -600,6 +619,8 @@
     const extraStatus = document.getElementById("extraStatus");
     const extraHint = document.getElementById("extraHint");
     const extraMode = document.getElementById("extraMode");
+    const extraBarberBadge = document.getElementById("extraBarberBadge");
+    const extraQuick = document.getElementById("extraQuick");
     const extraOpenDayBtn = document.getElementById("extraOpenDayBtn");
     const extraCloseDayBtn = document.getElementById("extraCloseDayBtn");
 
@@ -825,13 +846,30 @@
     function updateExtraFormState() {
       const barber = getSelectedBarber();
       extraForm.classList.toggle("is-disabled", !barber);
+      extraQuick.classList.toggle("is-disabled", !barber);
       if (!barber) {
-        extraHint.textContent = "Kies eerst een kapper om dagen of tijdslots voor die kapper aan te passen.";
+        extraHint.textContent = "Kies eerst Zennar of Bewar — elke kapper heeft een eigen agenda.";
+        extraBarberBadge.hidden = true;
         extraMode.hidden = true;
         return;
       }
-      extraHint.textContent = `Instellingen gelden alleen voor ${barberNames[barber] || barber}.`;
+      extraHint.textContent = "Wijzigingen gelden alleen voor de gekozen kapper, niet voor de andere.";
+      extraBarberBadge.hidden = false;
+      extraBarberBadge.textContent = `Actieve kapper: ${barberNames[barber] || barber}`;
       updateExtraMode();
+    }
+
+    function formatOverrideDateLabel(dateStr) {
+      const [year, month, day] = dateStr.split("-").map(Number);
+      const date = new Date(year, month - 1, day);
+      return `${dayNamesFull[date.getDay()]} ${day} ${monthNames[date.getMonth()]}`;
+    }
+
+    function confirmOverrideAction(action, barber, dateStr) {
+      const name = barberNames[barber] || barber;
+      return confirm(
+        `${action} voor ${name} op ${formatOverrideDateLabel(dateStr)}?\n\nAlleen klanten die bij ${name} boeken zien dit. De andere kapper blijft ongewijzigd.`
+      );
     }
 
     function updateExtraMode() {
@@ -905,8 +943,8 @@
     }
 
     async function saveOverride(options = {}) {
-      const date = getSelectedDate();
-      const barber = getSelectedBarber();
+      const date = options.date ?? getSelectedDate();
+      const barber = options.barber ?? getSelectedBarber();
       if (!date || !barber) return false;
 
       extraStatus.hidden = true;
@@ -940,10 +978,16 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Opslaan mislukt");
 
-        if (data.override) overridesCache.set(getOverrideCacheKey(date, barber), data.override);
-        else overridesCache.delete(getOverrideCacheKey(date, barber));
+        const savedBarber = normalizePortalBarber(data.override?.barber || data.barber || barber);
+        if (savedBarber !== barber) {
+          throw new Error(`Opslaan ging naar ${barberNames[savedBarber] || savedBarber} in plaats van ${barberNames[barber] || barber}.`);
+        }
 
-        showExtraStatus(data.message || "Opgeslagen");
+        if (data.override) overridesCache.set(getOverrideCacheKey(date, savedBarber), data.override);
+        else overridesCache.delete(getOverrideCacheKey(date, savedBarber));
+
+        const barberLabel = barberNames[savedBarber] || savedBarber;
+        showExtraStatus(`${data.message || "Opgeslagen"} (${barberLabel})`);
         renderDayButtons();
         loadExtraPanel(date);
         return true;
@@ -957,17 +1001,29 @@
       }
     }
 
+    function normalizePortalBarber(value) {
+      if (!value) return value;
+      if (value === "barbier-1") return "bewar";
+      if (value === "barbier-2") return "zennar";
+      return value;
+    }
+
     async function openDayQuick() {
       const barber = getSelectedBarber();
+      const date = getSelectedDate();
       if (!barber) {
-        showExtraStatus("Kies eerst een kapper.", true);
+        showExtraStatus("Kies eerst Zennar of Bewar.", true);
         return;
       }
+      if (!date) return;
+      if (!confirmOverrideAction("Deze dag openen", barber, date)) return;
 
       extraClosed.checked = false;
       extraOpen.value = "10:00";
       extraClose.value = "18:00";
       await saveOverride({
+        barber,
+        date,
         isClosed: false,
         openTime: "10:00",
         closeTime: "18:00",
@@ -976,13 +1032,18 @@
 
     async function closeDayQuick() {
       const barber = getSelectedBarber();
+      const date = getSelectedDate();
       if (!barber) {
-        showExtraStatus("Kies eerst een kapper.", true);
+        showExtraStatus("Kies eerst Zennar of Bewar.", true);
         return;
       }
+      if (!date) return;
+      if (!confirmOverrideAction("Deze dag sluiten", barber, date)) return;
 
       extraClosed.checked = true;
       await saveOverride({
+        barber,
+        date,
         isClosed: true,
         openTime: null,
         closeTime: null,
@@ -1060,6 +1121,9 @@
       if (!btn) return;
       agendaBarbers.querySelectorAll(".portal__barber").forEach((b) => b.classList.remove("is-active"));
       btn.classList.add("is-active");
+      updateExtraFormState();
+      loadExtraPanel(getSelectedDate());
+      renderDayButtons();
       loadVisibleOverrides().then(() => {
         renderDayButtons();
         loadExtraPanel(getSelectedDate());

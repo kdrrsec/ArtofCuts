@@ -137,6 +137,7 @@ const bookerCancelLink = document.getElementById("bookerCancelLink");
 
 let availabilityByDate = new Map();
 let bookableDates = [];
+let availabilityRequestId = 0;
 
 const SLOT_MINUTES = 45;
 
@@ -329,12 +330,13 @@ async function fetchAvailability() {
   const barber = getSelectedBarber();
   if (!barber || !daysWrap) return;
 
+  const requestId = ++availabilityRequestId;
   if (bookerDetails) bookerDetails.hidden = true;
   hideBookingError();
   const params = new URLSearchParams({ barber });
 
   try {
-    const res = await fetch(`/api/availability?${params.toString()}`);
+    const res = await fetch(`/api/availability?${params.toString()}`, { cache: "no-store" });
     const contentType = res.headers.get("content-type") || "";
 
     if (!contentType.includes("application/json")) {
@@ -343,12 +345,15 @@ async function fetchAvailability() {
 
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Kon beschikbaarheid niet laden");
+    if (requestId !== availabilityRequestId || barber !== getSelectedBarber()) return;
+    if (data.barber && data.barber !== barber) return;
 
     bookableDates = data.days.map((day) => day.date);
     availabilityByDate = new Map(data.days.map((day) => [day.date, day]));
     renderBookingDays(getSelectedDate());
     hideBookingError();
   } catch (error) {
+    if (requestId !== availabilityRequestId || barber !== getSelectedBarber()) return;
     console.warn("Availability fallback:", error);
     bookableDates = getLocalBookableDates();
     const localDays = buildLocalAvailability(bookableDates);

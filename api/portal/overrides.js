@@ -1,6 +1,6 @@
 import { getOverridesForDates, upsertOverride, deleteOverride } from "../lib/overrides.js";
 import { getBearerToken, verifyPortalToken } from "../lib/auth.js";
-import { isValidBarberId, isValidClockTime, normalizeBarberId } from "../lib/schedule.js";
+import { isValidBarberId, isValidClockTime, normalizeBarberId, BARBERS } from "../lib/schedule.js";
 import { handleOptions, readJsonBody, sendJson } from "../lib/http.js";
 import { getQuery } from "../lib/query.js";
 
@@ -88,7 +88,10 @@ export default async function handler(req, res) {
 
       return sendJson(res, 200, {
         override,
-        message: override ? "Extra opening opgeslagen" : "Dag teruggezet naar standaard",
+        barber: barberId,
+        message: override
+          ? `Extra opening opgeslagen voor ${BARBERS[barberId] || barberId}`
+          : `Dag teruggezet naar standaard voor ${BARBERS[barberId] || barberId}`,
       });
     }
 

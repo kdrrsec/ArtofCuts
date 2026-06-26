@@ -1,5 +1,5 @@
 import { ensureSchema, getSql, isDbConfigured, normalizeDateString } from "./db.js";
-import { isValidBarberId, normalizeBarberId } from "./schedule.js";
+import { getBarberIdVariants, isValidBarberId, normalizeBarberId } from "./schedule.js";
 
 function normalizeOverrideRow(row) {
   if (!row) return null;
@@ -24,6 +24,7 @@ export async function getOverridesForDates(dates, barberId) {
   await ensureSchema();
   const sql = getSql();
   const normalizedBarber = normalizeBarberId(barberId);
+  const barberVariants = getBarberIdVariants(normalizedBarber);
   const uniqueDates = [...new Set(dates.map(normalizeDateString).filter(Boolean))];
   const rows = await sql`
     SELECT
@@ -38,12 +39,13 @@ export async function getOverridesForDates(dates, barberId) {
       updated_at
     FROM schedule_overrides
     WHERE override_date = ANY(${uniqueDates})
-      AND barber_id = ${normalizedBarber}
+      AND barber_id = ANY(${barberVariants})
   `;
 
   for (const row of rows) {
     const override = normalizeOverrideRow(row);
-    if (override) map.set(override.date, override);
+    if (!override || override.barber !== normalizedBarber) continue;
+    map.set(override.date, override);
   }
 
   return map;

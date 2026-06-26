@@ -97,7 +97,8 @@ export default async function handler(req, res) {
     }
 
     if (!dates.length) {
-      return sendJson(res, 200, { days: [] });
+      res.setHeader("Cache-Control", "no-store");
+      return sendJson(res, 200, { days: [], barber: barberId, dbConnected: isDbConfigured() });
     }
 
     try {
@@ -108,7 +109,8 @@ export default async function handler(req, res) {
     }
 
     const days = buildAvailabilityDays(dates, bookedByDate, overridesMap);
-    return sendJson(res, 200, { days, dbConnected: isDbConfigured() });
+    res.setHeader("Cache-Control", "no-store");
+    return sendJson(res, 200, { days, barber: barberId, dbConnected: isDbConfigured() });
   } catch (error) {
     console.error(error);
     return sendJson(res, 500, { error: error.message || "Serverfout" });
