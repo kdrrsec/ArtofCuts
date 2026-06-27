@@ -56,18 +56,9 @@ Het boekingssysteem draait op Vercel Functions + Neon Postgres.
 2. Zet environment variables (zie `.env.example`):
    - `DATABASE_URL`
    - `PORTAL_PASSWORD`
-   - `GOOGLE_PLACES_API_KEY` (optioneel, voor automatische Google-reviews)
 3. Deploy opnieuw
 
 De database-tabel wordt automatisch aangemaakt bij de eerste API-call.
-
-### Google-reviews
-
-Standaard worden reviews getoond uit `api/data/reviews.json` — **geen API-sleutel nodig**.
-Kopieer daar af en toe echte reviews uit je Google Business-profiel naartoe.
-
-Optioneel kun je `GOOGLE_PLACES_API_KEY` zetten om reviews automatisch op te halen
-(in plaats van het handmatige bestand).
 
 ## Inhoud aanpassen
 
