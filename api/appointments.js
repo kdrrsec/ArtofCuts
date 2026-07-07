@@ -1,6 +1,11 @@
 import crypto from "crypto";
 import { ensureSchema, getSql } from "./lib/db.js";
-import { BARBERS, SERVICES, getAllSlotsForDate, isValidBarberId, normalizeBarberId } from "./lib/schedule.js";
+import {
+  getAvailableSlotsForService,
+  isValidBarberId,
+  isValidServiceId,
+  normalizeBarberId,
+} from "./lib/schedule.js";
 import { getOverrideForDate } from "./lib/overrides.js";
 import { handleOptions, readJsonBody, sendJson } from "./lib/http.js";
 
@@ -36,7 +41,7 @@ export default async function handler(req, res) {
       return sendJson(res, 400, { error: "Kies een geldige kapper" });
     }
     const barber = normalizeBarberId(rawBarber);
-    if (!service || !SERVICES[service]) {
+    if (!service || !isValidServiceId(service)) {
       return sendJson(res, 400, { error: "Kies een geldige dienst" });
     }
     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -49,26 +54,21 @@ export default async function handler(req, res) {
       return sendJson(res, 400, { error: "Voornaam en achternaam zijn verplicht" });
     }
 
-    const override = await getOverrideForDate(date, barber);
-    const allowedSlots = getAllSlotsForDate(date, override);
-    if (!allowedSlots.includes(time)) {
-      return sendJson(res, 400, { error: "Deze tijd is niet beschikbaar" });
-    }
-
     await ensureSchema();
     const sql = getSql();
+    const override = await getOverrideForDate(date, barber);
 
-    const existing = await sql`
-      SELECT id FROM appointments
+    const existingRows = await sql`
+      SELECT appointment_time, service
+      FROM appointments
       WHERE barber_id = ${barber}
         AND appointment_date = ${date}
-        AND appointment_time = ${time}
         AND cancelled_at IS NULL
-      LIMIT 1
     `;
 
-    if (existing.length > 0) {
-      return sendJson(res, 409, { error: "Deze tijd is zojuist geboekt. Kies een andere tijd." });
+    const allowedSlots = getAvailableSlotsForService(date, override, service, existingRows);
+    if (!allowedSlots.includes(time)) {
+      return sendJson(res, 400, { error: "Deze tijd is niet beschikbaar" });
     }
 
     const id = createId();

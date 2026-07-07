@@ -8,7 +8,14 @@ export const openingHours = {
   6: { open: [9, 0], close: [16, 30] },
 };
 
-export const SLOT_MINUTES = 45;
+export const SLOT_STEP_MINUTES = 10;
+
+export const SERVICE_DURATIONS = {
+  knippen: 40,
+  baard: 20,
+  "knippen-baard": 60,
+  kind: 30,
+};
 
 export const BARBERS = {
   bewar: "Bewar Z.",
@@ -45,6 +52,68 @@ export const SERVICES = {
   "knippen-baard": "Knippen + Baard",
   kind: "Knippen kind",
 };
+
+export function getServiceDuration(serviceId) {
+  return SERVICE_DURATIONS[serviceId] ?? null;
+}
+
+export function isValidServiceId(serviceId) {
+  return Boolean(getServiceDuration(serviceId));
+}
+
+export function timeToMinutes(time) {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+export function rangesOverlap(startA, durationA, startB, durationB) {
+  return startA < startB + durationB && startB < startA + durationA;
+}
+
+function getBookedRanges(appointments) {
+  return appointments.map((appointment) => ({
+    start: timeToMinutes(appointment.appointment_time || appointment.time),
+    duration: getServiceDuration(appointment.service) || SLOT_STEP_MINUTES,
+  }));
+}
+
+function isSlotFree(startMinutes, duration, bookedRanges, closeMinutes) {
+  if (startMinutes + duration > closeMinutes) return false;
+  return !bookedRanges.some((booked) => rangesOverlap(startMinutes, duration, booked.start, booked.duration));
+}
+
+function getCloseMinutesForDate(date, override = null) {
+  const hours = getHoursForDate(date, override);
+  if (!hours) return null;
+  return toMinutes(hours.close);
+}
+
+export function getCandidateSlotsForService(dateInput, override, serviceId) {
+  const duration = getServiceDuration(serviceId);
+  if (!duration) return [];
+
+  const date = typeof dateInput === "string" ? parseDateString(dateInput) : dateInput;
+  const closeMinutes = getCloseMinutesForDate(date, override);
+  if (closeMinutes === null) return [];
+
+  return getAllSlotsForDate(dateInput, override).filter(
+    (slot) => timeToMinutes(slot) + duration <= closeMinutes
+  );
+}
+
+export function getAvailableSlotsForService(dateInput, override, serviceId, bookedAppointments = []) {
+  const duration = getServiceDuration(serviceId);
+  if (!duration) return [];
+
+  const date = typeof dateInput === "string" ? parseDateString(dateInput) : dateInput;
+  const closeMinutes = getCloseMinutesForDate(date, override);
+  if (closeMinutes === null) return [];
+
+  const bookedRanges = getBookedRanges(bookedAppointments);
+  return getCandidateSlotsForService(dateInput, override, serviceId).filter((slot) =>
+    isSlotFree(timeToMinutes(slot), duration, bookedRanges, closeMinutes)
+  );
+}
 
 function toMinutes([hours, minutes]) {
   return hours * 60 + minutes;
@@ -99,11 +168,11 @@ function generateSlotsFromHours(hours, date) {
   const slots = [];
 
   let time = start;
-  while (time + SLOT_MINUTES <= end) {
+  while (time + SLOT_STEP_MINUTES <= end) {
     if (!isToday || time > nowMinutes) {
       slots.push(formatTime(time));
     }
-    time += SLOT_MINUTES;
+    time += SLOT_STEP_MINUTES;
   }
 
   return slots;

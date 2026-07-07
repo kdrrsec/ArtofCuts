@@ -139,13 +139,21 @@ let availabilityByDate = new Map();
 let bookableDates = [];
 let availabilityRequestId = 0;
 
-const SLOT_MINUTES = 45;
+const SLOT_STEP_MINUTES = 10;
+
+const SERVICE_DURATIONS = {
+  knippen: 40,
+  baard: 20,
+  "knippen-baard": 60,
+  kind: 30,
+};
 
 function toMinutes([hours, minutes]) {
   return hours * 60 + minutes;
 }
 
-function getLocalSlotsForDate(dateStr) {
+function getLocalSlotsForDate(dateStr, serviceId) {
+  const duration = SERVICE_DURATIONS[serviceId] || SERVICE_DURATIONS.knippen;
   const [year, month, day] = dateStr.split("-").map(Number);
   const date = new Date(year, month - 1, day);
   const hours = openingHours[date.getDay()];
@@ -159,19 +167,19 @@ function getLocalSlotsForDate(dateStr) {
   const slots = [];
 
   let time = start;
-  while (time + SLOT_MINUTES <= end) {
+  while (time + duration <= end) {
     if (!isToday || time > nowMinutes) {
       slots.push(`${String(Math.floor(time / 60)).padStart(2, "0")}:${String(time % 60).padStart(2, "0")}`);
     }
-    time += SLOT_MINUTES;
+    time += SLOT_STEP_MINUTES;
   }
 
   return slots;
 }
 
-function buildLocalAvailability(dates) {
+function buildLocalAvailability(dates, serviceId) {
   return dates.map((date) => {
-    const slots = getLocalSlotsForDate(date);
+    const slots = getLocalSlotsForDate(date, serviceId);
     return {
       date,
       total: slots.length,
@@ -328,12 +336,13 @@ function renderBookingDays(preferredDate) {
 
 async function fetchAvailability() {
   const barber = getSelectedBarber();
-  if (!barber || !daysWrap) return;
+  const service = getSelectedService();
+  if (!barber || !service || !daysWrap) return;
 
   const requestId = ++availabilityRequestId;
   if (bookerDetails) bookerDetails.hidden = true;
   hideBookingError();
-  const params = new URLSearchParams({ barber });
+  const params = new URLSearchParams({ barber, service });
 
   try {
     const res = await fetch(`/api/availability?${params.toString()}`, { cache: "no-store" });
@@ -346,6 +355,7 @@ async function fetchAvailability() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Kon beschikbaarheid niet laden");
     if (requestId !== availabilityRequestId || barber !== getSelectedBarber()) return;
+    if (service !== getSelectedService()) return;
     if (data.barber && data.barber !== barber) return;
 
     bookableDates = data.days.map((day) => day.date);
@@ -354,9 +364,10 @@ async function fetchAvailability() {
     hideBookingError();
   } catch (error) {
     if (requestId !== availabilityRequestId || barber !== getSelectedBarber()) return;
+    if (service !== getSelectedService()) return;
     console.warn("Availability fallback:", error);
     bookableDates = getLocalBookableDates();
-    const localDays = buildLocalAvailability(bookableDates);
+    const localDays = buildLocalAvailability(bookableDates, service);
     availabilityByDate = new Map(localDays.map((day) => [day.date, day]));
     renderBookingDays(getSelectedDate());
   }
@@ -447,7 +458,7 @@ async function submitBooking() {
 }
 
 if (daysWrap) {
-  singleSelect(document.querySelector(".booker__options"), ".chip");
+  singleSelect(document.querySelector(".booker__options"), ".chip", fetchAvailability);
   singleSelect(document.getElementById("bookerBarbers"), ".barber-pick", fetchAvailability);
   singleSelect(daysWrap, ".day", (btn) => renderTimeSlots(btn.dataset.date));
   singleSelect(timesWrap, ".slot", updateDetailsStep);
