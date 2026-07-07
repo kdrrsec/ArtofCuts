@@ -146,6 +146,19 @@ const SERVICE_DURATIONS = {
   kind: 30,
 };
 
+function formatTimeFromMinutes(totalMinutes) {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function formatAppointmentRange(startTime, serviceId) {
+  const duration = SERVICE_DURATIONS[serviceId];
+  if (!duration || !startTime) return startTime;
+  const [hours, minutes] = startTime.split(":").map(Number);
+  return `${startTime} – ${formatTimeFromMinutes(hours * 60 + minutes + duration)}`;
+}
+
 function toMinutes([hours, minutes]) {
   return hours * 60 + minutes;
 }
@@ -239,7 +252,7 @@ function getSelectedDate() {
 }
 
 function getSelectedTime() {
-  return timesWrap?.querySelector(".slot.is-active")?.textContent || null;
+  return timesWrap?.querySelector(".slot.is-active")?.dataset.time || null;
 }
 
 function singleSelect(container, selector, onChange) {
@@ -292,11 +305,14 @@ function renderTimeSlots(dateStr) {
     return;
   }
 
+  const serviceId = getSelectedService();
+
   slots.forEach((time) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "slot";
-    btn.textContent = time;
+    btn.dataset.time = time;
+    btn.textContent = formatAppointmentRange(time, serviceId);
     timesWrap.appendChild(btn);
   });
 
@@ -388,7 +404,8 @@ function showBookingSuccess(details, cancelUrl) {
   if (bookerDetails) bookerDetails.hidden = true;
   if (bookerSuccess) bookerSuccess.hidden = false;
   if (bookerSuccessText) {
-    bookerSuccessText.textContent = `${details.firstName} ${details.lastName}, je staat gepland op ${details.dateLabel} om ${details.time} bij ${details.barberName} voor ${details.serviceName}.`;
+    const timeRange = formatAppointmentRange(details.time, details.service);
+    bookerSuccessText.textContent = `${details.firstName} ${details.lastName}, je staat gepland op ${details.dateLabel} van ${timeRange} bij ${details.barberName} voor ${details.serviceName}.`;
   }
   if (bookerCancelLink) bookerCancelLink.href = cancelUrl;
 }

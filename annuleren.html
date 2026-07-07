@@ -94,7 +94,7 @@
 
         cancelDetails.hidden = false;
         cancelName.textContent = `${appointment.firstName} ${appointment.lastName}`;
-        cancelWhen.textContent = `${formatDateLabel(appointment.date)} om ${appointment.time}`;
+        cancelWhen.textContent = `${formatDateLabel(appointment.date)} · ${appointment.timeRange || appointment.time}`;
         cancelService.textContent = `${appointment.serviceName} bij ${appointment.barberName}`;
       } catch (error) {
         cancelLoading.hidden = true;

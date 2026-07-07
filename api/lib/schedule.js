@@ -143,10 +143,22 @@ function parseClockTime(value) {
   return [hours, minutes];
 }
 
-function formatTime(totalMinutes) {
+export function formatTime(totalMinutes) {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+export function getAppointmentEndTime(startTime, serviceId) {
+  const duration = getServiceDuration(serviceId);
+  if (!duration || !startTime) return null;
+  return formatTime(timeToMinutes(startTime) + duration);
+}
+
+export function formatAppointmentRange(startTime, serviceId) {
+  const endTime = getAppointmentEndTime(startTime, serviceId);
+  if (!endTime || endTime === startTime) return startTime;
+  return `${startTime} – ${endTime}`;
 }
 
 function parseDateString(dateStr) {
