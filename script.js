@@ -139,8 +139,6 @@ let availabilityByDate = new Map();
 let bookableDates = [];
 let availabilityRequestId = 0;
 
-const SLOT_STEP_MINUTES = 10;
-
 const SERVICE_DURATIONS = {
   knippen: 40,
   baard: 20,
@@ -171,7 +169,7 @@ function getLocalSlotsForDate(dateStr, serviceId) {
     if (!isToday || time > nowMinutes) {
       slots.push(`${String(Math.floor(time / 60)).padStart(2, "0")}:${String(time % 60).padStart(2, "0")}`);
     }
-    time += SLOT_STEP_MINUTES;
+    time += duration;
   }
 
   return slots;

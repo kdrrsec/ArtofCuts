@@ -1,10 +1,8 @@
 import { ensureSchema, getSql, isDbConfigured, normalizeDateString } from "./lib/db.js";
 import {
-  getAllSlotsForDate,
   getAvailableSlotsForService,
   getBookableDates,
   getCandidateSlotsForService,
-  getServiceDuration,
   isValidBarberId,
   isValidServiceId,
   normalizeBarberId,
@@ -47,15 +45,11 @@ async function getBookedAppointments(barberId, dates) {
 }
 
 function buildAvailabilityDays(dates, bookedByDate, overridesMap, serviceId) {
-  const duration = getServiceDuration(serviceId);
-
   return dates.map((date) => {
     const override = overridesMap.get(date) || null;
     const booked = bookedByDate.get(date) || [];
     const availableSlots = getAvailableSlotsForService(date, override, serviceId, booked);
-    const candidateSlots = duration
-      ? getCandidateSlotsForService(date, override, serviceId)
-      : getAllSlotsForDate(date, override);
+    const candidateSlots = getCandidateSlotsForService(date, override, serviceId);
     const total = candidateSlots.length;
     const bookedCount = total - availableSlots.length;
     const fullness = total === 0 ? 0 : Math.round((bookedCount / total) * 100);
