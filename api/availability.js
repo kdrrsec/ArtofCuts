@@ -1,10 +1,18 @@
 import { ensureSchema, getSql, isDbConfigured, normalizeDateString } from "./lib/db.js";
-import { getAllSlotsForDate, getBookableDates, BARBERS, isValidBarberId, normalizeBarberId, getBarberIdVariants } from "./lib/schedule.js";
+import {
+  getAvailableSlotsForService,
+  getBookableDates,
+  getCandidateSlotsForService,
+  isValidBarberId,
+  isValidServiceId,
+  normalizeBarberId,
+  getBarberIdVariants,
+} from "./lib/schedule.js";
 import { getOverridesForDates } from "./lib/overrides.js";
 import { handleOptions, sendJson } from "./lib/http.js";
 import { getQuery } from "./lib/query.js";
 
-async function getBookedSlots(barberId, dates) {
+async function getBookedAppointments(barberId, dates) {
   if (!isDbConfigured() || !dates.length) return new Map();
 
   await ensureSchema();
@@ -12,7 +20,7 @@ async function getBookedSlots(barberId, dates) {
   const barberVariants = getBarberIdVariants(barberId);
 
   const rows = await sql`
-    SELECT appointment_date::text AS appointment_date, appointment_time
+    SELECT appointment_date::text AS appointment_date, appointment_time, service
     FROM appointments
     WHERE barber_id = ANY(${barberVariants})
       AND appointment_date >= ${dates[0]}
@@ -26,20 +34,23 @@ async function getBookedSlots(barberId, dates) {
   for (const row of rows) {
     const key = normalizeDateString(row.appointment_date);
     if (!dateSet.has(key)) continue;
-    if (!bookedByDate.has(key)) bookedByDate.set(key, new Set());
-    bookedByDate.get(key).add(row.appointment_time);
+    if (!bookedByDate.has(key)) bookedByDate.set(key, []);
+    bookedByDate.get(key).push({
+      appointment_time: row.appointment_time,
+      service: row.service,
+    });
   }
 
   return bookedByDate;
 }
 
-function buildAvailabilityDays(dates, bookedByDate, overridesMap) {
+function buildAvailabilityDays(dates, bookedByDate, overridesMap, serviceId) {
   return dates.map((date) => {
     const override = overridesMap.get(date) || null;
-    const allSlots = getAllSlotsForDate(date, override);
-    const booked = bookedByDate.get(date) || new Set();
-    const availableSlots = allSlots.filter((slot) => !booked.has(slot));
-    const total = allSlots.length;
+    const booked = bookedByDate.get(date) || [];
+    const availableSlots = getAvailableSlotsForService(date, override, serviceId, booked);
+    const candidateSlots = getCandidateSlotsForService(date, override, serviceId);
+    const total = candidateSlots.length;
     const bookedCount = total - availableSlots.length;
     const fullness = total === 0 ? 0 : Math.round((bookedCount / total) * 100);
 
@@ -63,10 +74,14 @@ export default async function handler(req, res) {
   try {
     const query = getQuery(req);
     const barberId = normalizeBarberId(query.barber);
+    const serviceId = String(query.service || "").trim();
     const datesParam = query.dates;
 
     if (!barberId || !isValidBarberId(barberId)) {
       return sendJson(res, 400, { error: "Ongeldige kapper" });
+    }
+    if (!serviceId || !isValidServiceId(serviceId)) {
+      return sendJson(res, 400, { error: "Kies een geldige dienst" });
     }
 
     let dates;
@@ -98,19 +113,19 @@ export default async function handler(req, res) {
 
     if (!dates.length) {
       res.setHeader("Cache-Control", "no-store");
-      return sendJson(res, 200, { days: [], barber: barberId, dbConnected: isDbConfigured() });
+      return sendJson(res, 200, { days: [], barber: barberId, service: serviceId, dbConnected: isDbConfigured() });
     }
 
     try {
       overridesMap = await getOverridesForDates(dates, barberId);
-      bookedByDate = await getBookedSlots(barberId, dates);
+      bookedByDate = await getBookedAppointments(barberId, dates);
     } catch (dbError) {
       console.error("Availability fallback zonder database:", dbError.message);
     }
 
-    const days = buildAvailabilityDays(dates, bookedByDate, overridesMap);
+    const days = buildAvailabilityDays(dates, bookedByDate, overridesMap, serviceId);
     res.setHeader("Cache-Control", "no-store");
-    return sendJson(res, 200, { days, barber: barberId, dbConnected: isDbConfigured() });
+    return sendJson(res, 200, { days, barber: barberId, service: serviceId, dbConnected: isDbConfigured() });
   } catch (error) {
     console.error(error);
     return sendJson(res, 500, { error: error.message || "Serverfout" });

@@ -1,5 +1,5 @@
 import { ensureSchema, getSql } from "./lib/db.js";
-import { BARBERS, SERVICES, normalizeBarberId } from "./lib/schedule.js";
+import { BARBERS, SERVICES, formatAppointmentRange, getAppointmentEndTime, normalizeBarberId } from "./lib/schedule.js";
 import { handleOptions, sendJson } from "./lib/http.js";
 import { getQuery } from "./lib/query.js";
 
@@ -52,6 +52,8 @@ export default async function handler(req, res) {
         serviceName: SERVICES[row.service],
         date: row.appointment_date,
         time: row.appointment_time,
+        endTime: getAppointmentEndTime(row.appointment_time, row.service),
+        timeRange: formatAppointmentRange(row.appointment_time, row.service),
         firstName: row.first_name,
         lastName: row.last_name,
         email: row.email,

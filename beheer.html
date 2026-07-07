@@ -832,7 +832,7 @@
           el.className = "portal__item";
           const name = `${item.firstName} ${item.lastName}`;
           el.innerHTML = `
-            <div class="portal__time">${item.time}</div>
+            <div class="portal__time">${item.timeRange || item.time}</div>
             <div class="portal__item-body">
               <h3>${name}</h3>
               <p class="portal__meta">${item.serviceName} · ${item.barberName}</p>

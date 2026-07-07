@@ -8,7 +8,14 @@ export const openingHours = {
   6: { open: [9, 0], close: [16, 30] },
 };
 
-export const SLOT_MINUTES = 45;
+export const SERVICE_DURATIONS = {
+  knippen: 40,
+  baard: 20,
+  "knippen-baard": 60,
+  kind: 30,
+};
+
+const SHORTEST_SERVICE_MINUTES = Math.min(...Object.values(SERVICE_DURATIONS));
 
 export const BARBERS = {
   bewar: "Bewar Z.",
@@ -46,6 +53,85 @@ export const SERVICES = {
   kind: "Knippen kind",
 };
 
+export function getServiceDuration(serviceId) {
+  return SERVICE_DURATIONS[serviceId] ?? null;
+}
+
+export function isValidServiceId(serviceId) {
+  return Boolean(getServiceDuration(serviceId));
+}
+
+export function timeToMinutes(time) {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+export function rangesOverlap(startA, durationA, startB, durationB) {
+  return startA < startB + durationB && startB < startA + durationA;
+}
+
+function getBookedRanges(appointments) {
+  return appointments.map((appointment) => ({
+    start: timeToMinutes(appointment.appointment_time || appointment.time),
+    duration: getServiceDuration(appointment.service) || SHORTEST_SERVICE_MINUTES,
+  }));
+}
+
+function isSlotFree(startMinutes, duration, bookedRanges, closeMinutes) {
+  if (startMinutes + duration > closeMinutes) return false;
+  return !bookedRanges.some((booked) => rangesOverlap(startMinutes, duration, booked.start, booked.duration));
+}
+
+function getCloseMinutesForDate(date, override = null) {
+  const hours = getHoursForDate(date, override);
+  if (!hours) return null;
+  return toMinutes(hours.close);
+}
+
+export function getCandidateSlotsForService(dateInput, override, serviceId) {
+  const duration = getServiceDuration(serviceId);
+  if (!duration) return [];
+
+  const date = typeof dateInput === "string" ? parseDateString(dateInput) : dateInput;
+  const hours = getHoursForDate(date, override);
+  if (!hours) return [];
+
+  const closeMinutes = toMinutes(hours.close);
+  let slots = generateServiceSlots(hours, date, duration);
+
+  const added = Array.isArray(override?.addedSlots) ? override.addedSlots : [];
+  const blocked = new Set(Array.isArray(override?.blockedSlots) ? override.blockedSlots : []);
+  const now = new Date();
+  const isToday = isSameDay(date, now);
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  for (const slot of added) {
+    if (!/^\d{2}:\d{2}$/.test(slot) || slots.includes(slot) || blocked.has(slot)) continue;
+    const slotMinutes = timeToMinutes(slot);
+    if (slotMinutes + duration > closeMinutes) continue;
+    if (isToday && slotMinutes <= nowMinutes) continue;
+    slots.push(slot);
+  }
+
+  slots = slots.filter((slot) => !blocked.has(slot));
+  slots.sort();
+  return slots;
+}
+
+export function getAvailableSlotsForService(dateInput, override, serviceId, bookedAppointments = []) {
+  const duration = getServiceDuration(serviceId);
+  if (!duration) return [];
+
+  const date = typeof dateInput === "string" ? parseDateString(dateInput) : dateInput;
+  const closeMinutes = getCloseMinutesForDate(date, override);
+  if (closeMinutes === null) return [];
+
+  const bookedRanges = getBookedRanges(bookedAppointments);
+  return getCandidateSlotsForService(dateInput, override, serviceId).filter((slot) =>
+    isSlotFree(timeToMinutes(slot), duration, bookedRanges, closeMinutes)
+  );
+}
+
 function toMinutes([hours, minutes]) {
   return hours * 60 + minutes;
 }
@@ -57,10 +143,22 @@ function parseClockTime(value) {
   return [hours, minutes];
 }
 
-function formatTime(totalMinutes) {
+export function formatTime(totalMinutes) {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+export function getAppointmentEndTime(startTime, serviceId) {
+  const duration = getServiceDuration(serviceId);
+  if (!duration || !startTime) return null;
+  return formatTime(timeToMinutes(startTime) + duration);
+}
+
+export function formatAppointmentRange(startTime, serviceId) {
+  const endTime = getAppointmentEndTime(startTime, serviceId);
+  if (!endTime || endTime === startTime) return startTime;
+  return `${startTime} – ${endTime}`;
 }
 
 function parseDateString(dateStr) {
@@ -88,8 +186,8 @@ function getHoursForDate(date, override = null) {
   return openingHours[date.getDay()] || null;
 }
 
-function generateSlotsFromHours(hours, date) {
-  if (!hours) return [];
+function generateServiceSlots(hours, date, durationMinutes) {
+  if (!hours || !durationMinutes) return [];
 
   const start = toMinutes(hours.open);
   const end = toMinutes(hours.close);
@@ -99,11 +197,11 @@ function generateSlotsFromHours(hours, date) {
   const slots = [];
 
   let time = start;
-  while (time + SLOT_MINUTES <= end) {
+  while (time + durationMinutes <= end) {
     if (!isToday || time > nowMinutes) {
       slots.push(formatTime(time));
     }
-    time += SLOT_MINUTES;
+    time += durationMinutes;
   }
 
   return slots;
@@ -112,30 +210,13 @@ function generateSlotsFromHours(hours, date) {
 export function getAllSlotsForDate(dateInput, override = null) {
   const date = typeof dateInput === "string" ? parseDateString(dateInput) : dateInput;
   const hours = getHoursForDate(date, override);
-  let slots = generateSlotsFromHours(hours, date);
-
-  const added = Array.isArray(override?.addedSlots) ? override.addedSlots : [];
-  const blocked = new Set(Array.isArray(override?.blockedSlots) ? override.blockedSlots : []);
-  const now = new Date();
-  const isToday = isSameDay(date, now);
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-
-  for (const slot of added) {
-    if (!/^\d{2}:\d{2}$/.test(slot) || slots.includes(slot) || blocked.has(slot)) continue;
-    if (isToday) {
-      const [hours, minutes] = slot.split(":").map(Number);
-      if (hours * 60 + minutes <= nowMinutes) continue;
-    }
-    slots.push(slot);
-  }
-
-  slots = slots.filter((slot) => !blocked.has(slot));
-  slots.sort();
-  return slots;
+  return generateServiceSlots(hours, date, SHORTEST_SERVICE_MINUTES);
 }
 
 export function isDateOpen(dateStr, override = null) {
-  return getAllSlotsForDate(dateStr, override).length > 0;
+  return Object.keys(SERVICE_DURATIONS).some(
+    (serviceId) => getCandidateSlotsForService(dateStr, override, serviceId).length > 0
+  );
 }
 
 export function getBookableDates(count = 14, maxLookahead = 56, overridesMap = new Map()) {
